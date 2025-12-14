@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ==================== ПОЛЬЗОВАТЕЛИ ====================
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  password        String
+  name            String
+  role            String    @default("student") // "student" | "teacher" | "admin"
+  avatar          String?
+  phone           String?
+  isEmailVerified Boolean   @default(false)
+  twoFactorSecret String?
+  twoFactorEnabled Boolean  @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Связи
+  tests              Test[]
+  results            TestResult[]
+  notifications      Notification[]
+  sentNotifications  Notification[]    @relation("NotificationSender")
+  comments           ResultComment[]
+  passwordResets     PasswordReset[]
+  emailVerifications EmailVerification[]
+
+  @@map("users")
+}
+
+// Токены для сброса пароля
+model PasswordReset {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+// Токены для подтверждения email
+model EmailVerification {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verifications")
+}
+
+// ==================== ТЕСТЫ ====================
+
+model Test {
+  id                String    @id @default(uuid())
+  title             String
+  description       String    @default("")
+  visibility        String    @default("public") // "public" | "private" | "link"
+  timeLimit         Int?      // в минутах
+  allowTrainingMode Boolean   @default(true)
+  shareLink         String?   @unique // уникальная ссылка для приватных тестов
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Автор
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Связи
+  questions Question[]
+  results   TestResult[]
+  categories TestCategory[]
+
+  @@map("tests")
+}
+
+// Категории тестов
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  color       String   @default("#3b82f6")
+  icon        String?
+  createdAt   DateTime @default(now())
+
+  tests TestCategory[]
+
+  @@map("categories")
+}
+
+// Связь тестов и категорий (many-to-many)
+model TestCategory {
+  testId     String
+  categoryId String
+
+  test     Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([testId, categoryId])
+  @@map("test_categories")
+}
+
+// ==================== ВОПРОСЫ ====================
+
+model Question {
+  id          String  @id @default(uuid())
+  text        String
+  type        String  @default("single") // "single" | "multiple" | "text"
+  points      Int     @default(10)
+  difficulty  String  @default("medium") // "easy" | "medium" | "hard"
+  category    String?
+  hint        String?
+  explanation String?
+  order       Int     @default(0)
+
+  // Связь с тестом
+  testId String
+  test   Test   @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  // Варианты ответов
+  options AnswerOption[]
+
+  @@map("questions")
+}
+
+model AnswerOption {
+  id        String  @id @default(uuid())
+  text      String
+  isCorrect Boolean @default(false)
+  order     Int     @default(0)
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("answer_options")
+}
+
+// ==================== РЕЗУЛЬТАТЫ ====================
+
+model TestResult {
+  id          String   @id @default(uuid())
+  score       Int
+  maxScore    Int
+  percentage  Int
+  mode        String   @default("exam") // "training" | "exam"
+  totalTime   Int      @default(0) // в секундах
+  completedAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  testId String
+  test   Test   @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  // Детали ответов (JSON)
+  answersJson String @default("[]")
+  statsJson   String @default("[]")
+
+  // Комментарии учителя
+  comments ResultComment[]
+
+  @@map("test_results")
+}
+
+// Комментарии учителя к результатам
+model ResultComment {
+  id        String   @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now())
+
+  resultId String
+  result   TestResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("result_comments")
+}
+
+// ==================== УВЕДОМЛЕНИЯ ====================
+
+model Notification {
+  id        String   @id @default(uuid())
+  type      String   // "new_test" | "result" | "comment" | "system"
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  senderId String?
+  sender   User?   @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@map("notifications")
+}
+
+// ==================== ДОСТИЖЕНИЯ ====================
+
+model Achievement {
+  id            String   @id @default(uuid())
+  viserId       String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  @@unique([viserId, achievementId])
+  @@map("achievements")
+}
+
+// ==================== ИМПОРТ ====================
+
+model ImportHistory {
+  id          String   @id @default(uuid())
+  filename    String
+  questionsCount Int
+  status      String   @default("pending") // "pending" | "success" | "error"
+  error       String?
+  createdAt   DateTime @default(now())
+
+  testId String?
+
+  @@map("import_history")
+}
