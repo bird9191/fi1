@@ -1,139 +1,164 @@
+<!--
+  ==========================================
+  ВОССТАНОВЛЕНИЕ ПАРОЛЯ (ForgotPasswordView.vue)
+  ==========================================
+  
+  Страница запроса сброса пароля:
+  - Ввод email
+  - Отправка ссылки для сброса
+-->
+
 <template>
   <div class="auth-page">
     <div class="auth-card">
+      
+      <!-- ==========================================
+           ЗАГОЛОВОК
+           ========================================== -->
       <div class="auth-header">
-        <h1>Восстановление пароля</h1>
+        <h1>🔐 Восстановление пароля</h1>
         <p>Введите email для получения ссылки сброса</p>
       </div>
 
-      <!-- Успешная отправка -->
-      <div v-if="emailSent" class="success-state">
-        <div class="success-icon">✓</div>
+      <!-- ==========================================
+           УСПЕШНАЯ ОТПРАВКА
+           ========================================== -->
+      <div v-if="isSuccess" class="success-message">
+        <div class="success-icon">✉️</div>
         <h2>Письмо отправлено!</h2>
         <p>
-          Мы отправили инструкции по восстановлению пароля на
-          <strong>{{ form.email }}</strong>
+          Мы отправили ссылку для сброса пароля на адрес 
+          <strong>{{ email }}</strong>
         </p>
-        <p class="hint">Проверьте папку "Спам", если письмо не пришло</p>
-        <div class="success-actions">
-          <button @click="resendEmail" class="btn btn-outline" :disabled="isLoading || countdown > 0">
-            {{ countdown > 0 ? `Отправить снова (${countdown}с)` : 'Отправить снова' }}
-          </button>
-          <router-link to="/login" class="btn btn-primary">Вернуться к входу</router-link>
-        </div>
+        <p class="hint">
+          Проверьте папку "Спам", если письмо не пришло
+        </p>
+        <router-link to="/login" class="btn btn-primary">
+          ← Вернуться ко входу
+        </router-link>
       </div>
 
-      <!-- Форма -->
+      <!-- ==========================================
+           ФОРМА
+           ========================================== -->
       <form v-else @submit.prevent="handleSubmit" class="auth-form">
+        
+        <!-- Поле Email -->
         <div class="form-group">
           <label for="email">Email</label>
           <input
             id="email"
-            v-model="form.email"
+            v-model="email"
             type="email"
-            placeholder="your@email.com"
+            placeholder="example@mail.com"
             required
-            autocomplete="email"
+            autofocus
           />
         </div>
 
-        <div v-if="error" class="error-message">
-          {{ error }}
+        <!-- Ошибка -->
+        <div v-if="errorMessage" class="error-message">
+          {{ errorMessage }}
         </div>
 
+        <!-- Кнопка отправки -->
         <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
-          <span v-if="isLoading">Отправка...</span>
-          <span v-else>Отправить ссылку</span>
+          {{ isLoading ? '⏳ Отправка...' : '📤 Отправить ссылку' }}
         </button>
-      </form>
 
-      <div v-if="!emailSent" class="auth-footer">
-        <p>Вспомнили пароль? <router-link to="/login">Войти</router-link></p>
-      </div>
+        <!-- Ссылка назад -->
+        <div class="auth-footer">
+          <router-link to="/login">← Вернуться ко входу</router-link>
+        </div>
+        
+      </form>
+      
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { api } from '@/services/api'
+/**
+ * ==========================================
+ * ЛОГИКА ВОССТАНОВЛЕНИЯ ПАРОЛЯ
+ * ==========================================
+ */
 
-const form = reactive({
-  email: ''
-})
+import { ref } from 'vue'
+import api from '@/services/api'
 
+// ==========================================
+// СОСТОЯНИЕ
+// ==========================================
+
+/** Email пользователя */
+const email = ref('')
+
+/** Флаг загрузки */
 const isLoading = ref(false)
-const error = ref('')
-const emailSent = ref(false)
-const countdown = ref(0)
 
-let countdownInterval: number | null = null
+/** Флаг успешной отправки */
+const isSuccess = ref(false)
 
-async function handleSubmit() {
-  error.value = ''
-  isLoading.value = true
+/** Сообщение об ошибке */
+const errorMessage = ref('')
 
-  try {
-    await api.forgotPassword(form.email)
-    emailSent.value = true
-    startCountdown()
-  } catch (e: unknown) {
-    const err = e as { message?: string }
-    error.value = err.message || 'Ошибка при отправке письма'
-  } finally {
-    isLoading.value = false
-  }
-}
+// ==========================================
+// МЕТОДЫ
+// ==========================================
 
-async function resendEmail() {
-  if (countdown.value > 0) return
+/**
+ * Отправляет запрос на сброс пароля
+ */
+async function handleSubmit(): Promise<void> {
+  if (!email.value || isLoading.value) return
   
   isLoading.value = true
-  error.value = ''
-
-  try {
-    await api.forgotPassword(form.email)
-    startCountdown()
-  } catch (e: unknown) {
-    const err = e as { message?: string }
-    error.value = err.message || 'Ошибка при отправке письма'
-  } finally {
-    isLoading.value = false
-  }
-}
-
-function startCountdown() {
-  countdown.value = 60
-  if (countdownInterval) clearInterval(countdownInterval)
+  errorMessage.value = ''
   
-  countdownInterval = window.setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0 && countdownInterval) {
-      clearInterval(countdownInterval)
+  try {
+    await api.requestPasswordReset(email.value)
+    isSuccess.value = true
+  } catch (error: any) {
+    console.error('Ошибка отправки:', error)
+    
+    // Показываем ошибку
+    if (error.response?.status === 404) {
+      errorMessage.value = 'Пользователь с таким email не найден'
+    } else {
+      errorMessage.value = 'Ошибка при отправке. Попробуйте позже.'
     }
-  }, 1000)
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
 <style scoped>
+/* ==========================================
+   СТИЛИ ВОССТАНОВЛЕНИЯ ПАРОЛЯ
+   ========================================== */
+
 .auth-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 60px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: radial-gradient(ellipse at top, var(--accent-glow) 0%, transparent 50%);
 }
 
 .auth-card {
-  width: 100%;
-  max-width: 420px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 24px;
   padding: 2.5rem;
-  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 420px;
 }
+
+/* ==========================================
+   ЗАГОЛОВОК
+   ========================================== */
 
 .auth-header {
   text-align: center;
@@ -141,132 +166,105 @@ function startCountdown() {
 }
 
 .auth-header h1 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   margin-bottom: 0.5rem;
-  color: var(--color-text);
 }
 
 .auth-header p {
   color: var(--color-text-muted);
+  font-size: 0.95rem;
 }
 
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+/* ==========================================
+   УСПЕШНАЯ ОТПРАВКА
+   ========================================== */
+
+.success-message {
+  text-align: center;
 }
+
+.success-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.success-message h2 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #4ade80;
+}
+
+.success-message p {
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.success-message .hint {
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ==========================================
+   ФОРМА
+   ========================================== */
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
+  display: block;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text);
+  margin-bottom: 0.5rem;
 }
 
 .form-group input {
+  width: 100%;
   padding: 0.875rem 1rem;
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   font-size: 1rem;
   color: var(--color-text);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s;
 }
 
 .form-group input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-.form-group input::placeholder {
-  color: var(--color-text-muted);
-}
-
+/* Ошибка */
 .error-message {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  color: #f87171;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.9rem;
-}
-
-.btn-block {
-  width: 100%;
-  padding: 1rem;
-  font-size: 1rem;
-}
-
-.auth-footer {
-  text-align: center;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.auth-footer p {
-  color: var(--color-text-muted);
-}
-
-.auth-footer a {
-  color: var(--color-primary);
-  font-weight: 500;
-}
-
-.auth-footer a:hover {
-  text-decoration: underline;
-}
-
-/* Success state */
-.success-state {
-  text-align: center;
-}
-
-.success-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 1.5rem;
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: bold;
-}
-
-.success-state h2 {
-  font-size: 1.5rem;
   margin-bottom: 1rem;
 }
 
-.success-state p {
+/* Кнопка */
+.btn-block {
+  width: 100%;
+}
+
+/* Футер */
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.auth-footer a {
   color: var(--color-text-muted);
-  margin-bottom: 0.5rem;
+  text-decoration: none;
+  font-size: 0.95rem;
 }
 
-.success-state strong {
-  color: var(--color-text);
-}
-
-.success-state .hint {
-  font-size: 0.85rem;
-  margin-top: 1rem;
-}
-
-.success-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 2rem;
+.auth-footer a:hover {
+  color: var(--color-primary);
 }
 </style>
-
-

@@ -1,3 +1,15 @@
+/**
+ * ==========================================
+ * МАРШРУТЫ ТЕСТОВ (tests.js)
+ * ==========================================
+ * 
+ * CRUD операции с тестами:
+ * - Получение списка тестов
+ * - Создание, редактирование, удаление
+ * - Отправка и просмотр результатов
+ * - Комментарии учителя к результатам
+ */
+
 import express from 'express'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
@@ -5,13 +17,27 @@ import prisma from '../db/prisma.js'
 import { createNotification } from './notifications.js'
 
 const router = express.Router()
+
+// ==========================================
+// КОНФИГУРАЦИЯ
+// ==========================================
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key-change-in-production'
 
-// Auth middleware
+// ==========================================
+// MIDDLEWARE
+// ==========================================
+
+/**
+ * Проверка авторизации (обязательная)
+ */
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization
+  
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Не авторизован' })
+    return res.status(401).json({ 
+      error: 'Требуется авторизация' 
+    })
   }
 
   try {
@@ -19,38 +45,58 @@ function authMiddleware(req, res, next) {
     req.user = jwt.verify(token, JWT_SECRET)
     next()
   } catch (error) {
-    return res.status(401).json({ error: 'Недействительный токен' })
+    return res.status(401).json({ 
+      error: 'Недействительный токен' 
+    })
   }
 }
 
-// Optional auth
+/**
+ * Опциональная авторизация
+ * Не блокирует запрос, но добавляет req.user если токен валиден
+ */
 function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization
+  
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
       req.user = jwt.verify(authHeader.split(' ')[1], JWT_SECRET)
-    } catch (error) {}
+    } catch (error) {
+      // Игнорируем ошибку - продолжаем без авторизации
+    }
   }
   next()
 }
 
-// Format test for response
+// ==========================================
+// ФОРМАТИРОВАНИЕ ДАННЫХ
+// ==========================================
+
+/**
+ * Форматирует тест для ответа клиенту
+ * @param {Object} test - Объект теста из базы данных
+ * @returns {Object} Отформатированный тест
+ */
 function formatTest(test) {
   return {
     id: test.id,
     title: test.title,
     description: test.description,
     authorId: test.authorId,
-    authorName: test.author?.name || 'Unknown',
+    authorName: test.author?.name || 'Неизвестный автор',
     visibility: test.visibility,
     shareLink: test.shareLink,
     timeLimit: test.timeLimit,
     allowTrainingMode: test.allowTrainingMode,
+    
+    // Категории
     categories: test.categories?.map(c => ({
       id: c.category.id,
       name: c.category.name,
       color: c.category.color
     })) || [],
+    
+    // Вопросы
     questions: test.questions?.map(q => ({
       id: q.id,
       text: q.text,
@@ -66,14 +112,29 @@ function formatTest(test) {
         isCorrect: o.isCorrect,
       })) || []
     })) || [],
+    
     createdAt: test.createdAt,
     updatedAt: test.updatedAt,
   }
 }
 
-// ==================== ПОИСК И ФИЛЬТРАЦИЯ ====================
+// ==========================================
+// ПОЛУЧЕНИЕ ТЕСТОВ
+// ==========================================
 
-// Получить все публичные тесты с фильтрами
+/**
+ * GET /api/tests
+ * Получение публичных тестов с фильтрацией и пагинацией
+ * 
+ * Query params:
+ * - search: поиск по названию/описанию
+ * - category: фильтр по категории
+ * - difficulty: фильтр по сложности
+ * - sortBy: поле сортировки (default: createdAt)
+ * - order: направление сортировки (default: desc)
+ * - page: номер страницы (default: 1)
+ * - limit: количество на странице (default: 20)
+ */
 router.get('/', optionalAuth, async (req, res) => {
   try {
     const { 
@@ -86,6 +147,7 @@ router.get('/', optionalAuth, async (req, res) => {
       limit = 20 
     } = req.query
 
+    // Базовый фильтр - только публичные
     const where = { visibility: 'public' }
 
     // Поиск по названию и описанию
@@ -103,16 +165,18 @@ router.get('/', optionalAuth, async (req, res) => {
       }
     }
 
-    // Фильтр по сложности (по вопросам)
+    // Фильтр по сложности вопросов
     if (difficulty) {
       where.questions = {
         some: { difficulty }
       }
     }
 
+    // Сортировка
     const orderBy = {}
     orderBy[sortBy] = order
 
+    // Запрос с пагинацией
     const [tests, total] = await Promise.all([
       prisma.test.findMany({
         where,
@@ -146,17 +210,25 @@ router.get('/', optionalAuth, async (req, res) => {
         pages: Math.ceil(total / parseInt(limit))
       }
     })
+
   } catch (error) {
-    console.error('Get tests error:', error)
-    res.status(500).json({ error: 'Ошибка сервера' })
+    console.error('❌ Get tests error:', error)
+    res.status(500).json({ error: 'Ошибка загрузки тестов' })
   }
 })
 
-// Тесты пользователя (учитель)
+/**
+ * GET /api/tests/my
+ * Тесты текущего учителя
+ * Требует авторизации + роль teacher
+ */
 router.get('/my', authMiddleware, async (req, res) => {
   try {
+    // Проверяем роль
     if (req.user.role !== 'teacher') {
-      return res.status(403).json({ error: 'Доступ запрещён' })
+      return res.status(403).json({ 
+        error: 'Только учителя могут просматривать свои тесты' 
+      })
     }
 
     const tests = await prisma.test.findMany({
@@ -181,13 +253,18 @@ router.get('/my', authMiddleware, async (req, res) => {
         resultsCount: t._count.results
       }))
     })
+
   } catch (error) {
-    console.error('Get my tests error:', error)
-    res.status(500).json({ error: 'Ошибка сервера' })
+    console.error('❌ Get my tests error:', error)
+    res.status(500).json({ error: 'Ошибка загрузки тестов' })
   }
 })
 
-// Результаты пользователя
+/**
+ * GET /api/tests/results/my
+ * Результаты текущего пользователя
+ * Требует авторизации
+ */
 router.get('/results/my', authMiddleware, async (req, res) => {
   try {
     const results = await prisma.testResult.findMany({
@@ -223,15 +300,21 @@ router.get('/results/my', authMiddleware, async (req, res) => {
         comments: r.comments
       }))
     })
+
   } catch (error) {
-    console.error('Get my results error:', error)
-    res.status(500).json({ error: 'Ошибка сервера' })
+    console.error('❌ Get my results error:', error)
+    res.status(500).json({ error: 'Ошибка загрузки результатов' })
   }
 })
 
-// ==================== ПРИВАТНЫЕ ССЫЛКИ ====================
+// ==========================================
+// ПРИВАТНЫЕ ССЫЛКИ
+// ==========================================
 
-// Доступ по приватной ссылке
+/**
+ * GET /api/tests/share/:shareLink
+ * Доступ к тесту по приватной ссылке
+ */
 router.get('/share/:shareLink', optionalAuth, async (req, res) => {
   try {
     const test = await prisma.test.findUnique({
@@ -249,17 +332,23 @@ router.get('/share/:shareLink', optionalAuth, async (req, res) => {
     })
 
     if (!test) {
-      return res.status(404).json({ error: 'Тест не найден' })
+      return res.status(404).json({ 
+        error: 'Тест не найден или ссылка недействительна' 
+      })
     }
 
     res.json({ test: formatTest(test) })
+
   } catch (error) {
-    console.error('Get shared test error:', error)
+    console.error('❌ Get shared test error:', error)
     res.status(500).json({ error: 'Ошибка сервера' })
   }
 })
 
-// Получить одиночный тест
+/**
+ * GET /api/tests/:id
+ * Получение одного теста по ID
+ */
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const test = await prisma.test.findUnique({
@@ -277,35 +366,63 @@ router.get('/:id', optionalAuth, async (req, res) => {
     })
 
     if (!test) {
-      return res.status(404).json({ error: 'Тест не найден' })
+      return res.status(404).json({ 
+        error: 'Тест не найден' 
+      })
     }
 
+    // Проверка доступа к приватному тесту
     if (test.visibility === 'private') {
-      if (!req.user || (req.user.id !== test.authorId)) {
-        return res.status(403).json({ error: 'Доступ запрещён' })
+      if (!req.user || req.user.id !== test.authorId) {
+        return res.status(403).json({ 
+          error: 'Нет доступа к этому тесту' 
+        })
       }
     }
 
     res.json({ test: formatTest(test) })
+
   } catch (error) {
-    console.error('Get test error:', error)
+    console.error('❌ Get test error:', error)
     res.status(500).json({ error: 'Ошибка сервера' })
   }
 })
 
-// ==================== СОЗДАНИЕ И РЕДАКТИРОВАНИЕ ====================
+// ==========================================
+// СОЗДАНИЕ И РЕДАКТИРОВАНИЕ
+// ==========================================
 
-// Создать тест
+/**
+ * POST /api/tests
+ * Создание нового теста
+ * Требует авторизации + роль teacher
+ * 
+ * Body: { title, description, questions, visibility, timeLimit, allowTrainingMode, categoryIds }
+ */
 router.post('/', authMiddleware, async (req, res) => {
   try {
+    // Проверяем роль
     if (req.user.role !== 'teacher') {
-      return res.status(403).json({ error: 'Только учителя могут создавать тесты' })
+      return res.status(403).json({ 
+        error: 'Только учителя могут создавать тесты' 
+      })
     }
 
-    const { title, description, questions, visibility, timeLimit, allowTrainingMode, categoryIds } = req.body
+    const { 
+      title, 
+      description, 
+      questions, 
+      visibility, 
+      timeLimit, 
+      allowTrainingMode, 
+      categoryIds 
+    } = req.body
 
+    // Валидация
     if (!title || !questions || questions.length === 0) {
-      return res.status(400).json({ error: 'Название и вопросы обязательны' })
+      return res.status(400).json({ 
+        error: 'Название и вопросы обязательны' 
+      })
     }
 
     // Генерация ссылки для приватных тестов
@@ -314,6 +431,7 @@ router.post('/', authMiddleware, async (req, res) => {
       shareLink = crypto.randomBytes(16).toString('hex')
     }
 
+    // Создаём тест с вопросами
     const test = await prisma.test.create({
       data: {
         title,
@@ -323,6 +441,8 @@ router.post('/', authMiddleware, async (req, res) => {
         timeLimit: timeLimit || null,
         allowTrainingMode: allowTrainingMode !== false,
         authorId: req.user.id,
+        
+        // Вопросы с вариантами ответов
         questions: {
           create: questions.map((q, idx) => ({
             text: q.text,
@@ -342,6 +462,8 @@ router.post('/', authMiddleware, async (req, res) => {
             }
           }))
         },
+        
+        // Категории
         categories: categoryIds ? {
           create: categoryIds.map(id => ({
             categoryId: id
@@ -360,27 +482,50 @@ router.post('/', authMiddleware, async (req, res) => {
       }
     })
 
-    res.status(201).json({ test: formatTest(test) })
+    res.status(201).json({ 
+      test: formatTest(test),
+      message: 'Тест успешно создан!'
+    })
+
   } catch (error) {
-    console.error('Create test error:', error)
+    console.error('❌ Create test error:', error)
     res.status(500).json({ error: 'Ошибка создания теста' })
   }
 })
 
-// Обновить тест
+/**
+ * PUT /api/tests/:id
+ * Обновление существующего теста
+ * Требует авторизации + авторство
+ */
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const test = await prisma.test.findUnique({ where: { id: req.params.id } })
+    const test = await prisma.test.findUnique({ 
+      where: { id: req.params.id } 
+    })
     
     if (!test) {
-      return res.status(404).json({ error: 'Тест не найден' })
+      return res.status(404).json({ 
+        error: 'Тест не найден' 
+      })
     }
 
+    // Проверяем авторство
     if (test.authorId !== req.user.id) {
-      return res.status(403).json({ error: 'Вы не можете редактировать чужой тест' })
+      return res.status(403).json({ 
+        error: 'Вы не можете редактировать чужой тест' 
+      })
     }
 
-    const { title, description, questions, visibility, timeLimit, allowTrainingMode, categoryIds } = req.body
+    const { 
+      title, 
+      description, 
+      questions, 
+      visibility, 
+      timeLimit, 
+      allowTrainingMode, 
+      categoryIds 
+    } = req.body
 
     // Обновление shareLink при смене видимости
     let shareLink = test.shareLink
@@ -390,12 +535,13 @@ router.put('/:id', authMiddleware, async (req, res) => {
       shareLink = null
     }
 
-    // Удалить старые вопросы и категории
+    // Удаляем старые вопросы и категории
     await prisma.$transaction([
       prisma.question.deleteMany({ where: { testId: test.id } }),
       prisma.testCategory.deleteMany({ where: { testId: test.id } })
     ])
 
+    // Обновляем тест
     const updatedTest = await prisma.test.update({
       where: { id: test.id },
       data: {
@@ -404,7 +550,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
         visibility: visibility || test.visibility,
         shareLink,
         timeLimit: timeLimit !== undefined ? timeLimit : test.timeLimit,
-        allowTrainingMode: allowTrainingMode !== undefined ? allowTrainingMode : test.allowTrainingMode,
+        allowTrainingMode: allowTrainingMode !== undefined 
+          ? allowTrainingMode 
+          : test.allowTrainingMode,
+        
+        // Новые вопросы
         questions: questions ? {
           create: questions.map((q, idx) => ({
             text: q.text,
@@ -424,6 +574,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
             }
           }))
         } : undefined,
+        
+        // Новые категории
         categories: categoryIds ? {
           create: categoryIds.map(id => ({
             categoryId: id
@@ -442,22 +594,35 @@ router.put('/:id', authMiddleware, async (req, res) => {
       }
     })
 
-    res.json({ test: formatTest(updatedTest) })
+    res.json({ 
+      test: formatTest(updatedTest),
+      message: 'Тест успешно обновлён!'
+    })
+
   } catch (error) {
-    console.error('Update test error:', error)
+    console.error('❌ Update test error:', error)
     res.status(500).json({ error: 'Ошибка обновления теста' })
   }
 })
 
-// Сгенерировать новую ссылку
+/**
+ * POST /api/tests/:id/regenerate-link
+ * Генерация новой приватной ссылки
+ * Требует авторизации + авторство
+ */
 router.post('/:id/regenerate-link', authMiddleware, async (req, res) => {
   try {
     const test = await prisma.test.findFirst({
-      where: { id: req.params.id, authorId: req.user.id }
+      where: { 
+        id: req.params.id, 
+        authorId: req.user.id 
+      }
     })
 
     if (!test) {
-      return res.status(404).json({ error: 'Тест не найден' })
+      return res.status(404).json({ 
+        error: 'Тест не найден' 
+      })
     }
 
     const shareLink = crypto.randomBytes(16).toString('hex')
@@ -467,38 +632,64 @@ router.post('/:id/regenerate-link', authMiddleware, async (req, res) => {
       data: { shareLink }
     })
 
-    res.json({ shareLink, message: 'Ссылка обновлена' })
+    res.json({ 
+      shareLink, 
+      message: 'Ссылка обновлена' 
+    })
+
   } catch (error) {
-    console.error('Regenerate link error:', error)
+    console.error('❌ Regenerate link error:', error)
     res.status(500).json({ error: 'Ошибка сервера' })
   }
 })
 
-// Удалить тест
+/**
+ * DELETE /api/tests/:id
+ * Удаление теста
+ * Требует авторизации + авторство (или роль admin)
+ */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const test = await prisma.test.findUnique({ where: { id: req.params.id } })
+    const test = await prisma.test.findUnique({ 
+      where: { id: req.params.id } 
+    })
     
     if (!test) {
-      return res.status(404).json({ error: 'Тест не найден' })
+      return res.status(404).json({ 
+        error: 'Тест не найден' 
+      })
     }
 
+    // Проверяем права (автор или админ)
     if (test.authorId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Вы не можете удалить чужой тест' })
+      return res.status(403).json({ 
+        error: 'Нет прав на удаление этого теста' 
+      })
     }
 
-    await prisma.test.delete({ where: { id: test.id } })
+    await prisma.test.delete({ 
+      where: { id: test.id } 
+    })
 
     res.json({ message: 'Тест удалён' })
+
   } catch (error) {
-    console.error('Delete test error:', error)
+    console.error('❌ Delete test error:', error)
     res.status(500).json({ error: 'Ошибка удаления теста' })
   }
 })
 
-// ==================== РЕЗУЛЬТАТЫ ====================
+// ==========================================
+// РЕЗУЛЬТАТЫ
+// ==========================================
 
-// Отправить результат теста
+/**
+ * POST /api/tests/:id/submit
+ * Отправка результатов теста
+ * Требует авторизации
+ * 
+ * Body: { answers, mode, totalTime, questionStats }
+ */
 router.post('/:id/submit', authMiddleware, async (req, res) => {
   try {
     const test = await prisma.test.findUnique({
@@ -510,12 +701,14 @@ router.post('/:id/submit', authMiddleware, async (req, res) => {
     })
 
     if (!test) {
-      return res.status(404).json({ error: 'Тест не найден' })
+      return res.status(404).json({ 
+        error: 'Тест не найден' 
+      })
     }
 
     const { answers, mode, totalTime, questionStats } = req.body
 
-    // Расчёт баллов
+    // Подсчёт баллов
     let score = 0
     let maxScore = 0
 
@@ -525,9 +718,14 @@ router.post('/:id/submit', authMiddleware, async (req, res) => {
 
       if (userAnswer) {
         if (question.type === 'text') {
+          // Текстовый ответ - полные баллы (можно добавить проверку)
           score += question.points
         } else {
-          const correctIds = question.options.filter(o => o.isCorrect).map(o => o.id)
+          // Проверка выбранных вариантов
+          const correctIds = question.options
+            .filter(o => o.isCorrect)
+            .map(o => o.id)
+          
           const isCorrect = 
             correctIds.length === userAnswer.selectedOptionIds.length &&
             correctIds.every(id => userAnswer.selectedOptionIds.includes(id))
@@ -539,6 +737,7 @@ router.post('/:id/submit', authMiddleware, async (req, res) => {
       }
     }
 
+    // Сохраняем результат
     const result = await prisma.testResult.create({
       data: {
         userId: req.user.id,
@@ -557,7 +756,7 @@ router.post('/:id/submit', authMiddleware, async (req, res) => {
       }
     })
 
-    // Уведомление учителю
+    // Уведомляем учителя о новом результате
     if (test.author.id !== req.user.id) {
       await createNotification({
         userId: test.author.id,
@@ -584,25 +783,38 @@ router.post('/:id/submit', authMiddleware, async (req, res) => {
         completedAt: result.completedAt,
         answers: JSON.parse(result.answersJson),
         questionStats: JSON.parse(result.statsJson),
-      }
+      },
+      message: 'Результат сохранён!'
     })
+
   } catch (error) {
-    console.error('Submit test error:', error)
+    console.error('❌ Submit test error:', error)
     res.status(500).json({ error: 'Ошибка сохранения результата' })
   }
 })
 
-// Результаты теста (для учителя)
+/**
+ * GET /api/tests/:id/results
+ * Результаты теста (для учителя)
+ * Требует авторизации + авторство (или admin)
+ */
 router.get('/:id/results', authMiddleware, async (req, res) => {
   try {
-    const test = await prisma.test.findUnique({ where: { id: req.params.id } })
+    const test = await prisma.test.findUnique({ 
+      where: { id: req.params.id } 
+    })
     
     if (!test) {
-      return res.status(404).json({ error: 'Тест не найден' })
+      return res.status(404).json({ 
+        error: 'Тест не найден' 
+      })
     }
 
+    // Проверяем права
     if (test.authorId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Доступ запрещён' })
+      return res.status(403).json({ 
+        error: 'Нет доступа к результатам' 
+      })
     }
 
     const results = await prisma.testResult.findMany({
@@ -638,21 +850,32 @@ router.get('/:id/results', authMiddleware, async (req, res) => {
         comments: r.comments
       }))
     })
+
   } catch (error) {
-    console.error('Get test results error:', error)
-    res.status(500).json({ error: 'Ошибка сервера' })
+    console.error('❌ Get test results error:', error)
+    res.status(500).json({ error: 'Ошибка загрузки результатов' })
   }
 })
 
-// ==================== КОММЕНТАРИИ УЧИТЕЛЯ ====================
+// ==========================================
+// КОММЕНТАРИИ К РЕЗУЛЬТАТАМ
+// ==========================================
 
-// Добавить комментарий к результату
+/**
+ * POST /api/tests/results/:resultId/comments
+ * Добавление комментария учителя к результату
+ * Требует авторизации + авторство теста (или admin)
+ * 
+ * Body: { text }
+ */
 router.post('/results/:resultId/comments', authMiddleware, async (req, res) => {
   try {
     const { text } = req.body
 
     if (!text) {
-      return res.status(400).json({ error: 'Текст комментария обязателен' })
+      return res.status(400).json({ 
+        error: 'Текст комментария обязателен' 
+      })
     }
 
     const result = await prisma.testResult.findUnique({
@@ -664,12 +887,16 @@ router.post('/results/:resultId/comments', authMiddleware, async (req, res) => {
     })
 
     if (!result) {
-      return res.status(404).json({ error: 'Результат не найден' })
+      return res.status(404).json({ 
+        error: 'Результат не найден' 
+      })
     }
 
-    // Только автор теста или админ может комментировать
+    // Проверяем права (автор теста или админ)
     if (result.test.authorId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Нет прав на комментирование' })
+      return res.status(403).json({ 
+        error: 'Нет прав на комментирование' 
+      })
     }
 
     const comment = await prisma.resultComment.create({
@@ -683,7 +910,7 @@ router.post('/results/:resultId/comments', authMiddleware, async (req, res) => {
       }
     })
 
-    // Уведомление студенту
+    // Уведомляем студента
     if (result.user.id !== req.user.id) {
       await createNotification({
         userId: result.user.id,
@@ -695,14 +922,22 @@ router.post('/results/:resultId/comments', authMiddleware, async (req, res) => {
       })
     }
 
-    res.status(201).json({ comment })
+    res.status(201).json({ 
+      comment,
+      message: 'Комментарий добавлен'
+    })
+
   } catch (error) {
-    console.error('Add comment error:', error)
+    console.error('❌ Add comment error:', error)
     res.status(500).json({ error: 'Ошибка добавления комментария' })
   }
 })
 
-// Удалить комментарий
+/**
+ * DELETE /api/tests/comments/:commentId
+ * Удаление комментария
+ * Требует авторизации + авторство комментария (или admin)
+ */
 router.delete('/comments/:commentId', authMiddleware, async (req, res) => {
   try {
     const comment = await prisma.resultComment.findUnique({
@@ -710,11 +945,16 @@ router.delete('/comments/:commentId', authMiddleware, async (req, res) => {
     })
 
     if (!comment) {
-      return res.status(404).json({ error: 'Комментарий не найден' })
+      return res.status(404).json({ 
+        error: 'Комментарий не найден' 
+      })
     }
 
+    // Проверяем права
     if (comment.authorId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Нет прав на удаление' })
+      return res.status(403).json({ 
+        error: 'Нет прав на удаление' 
+      })
     }
 
     await prisma.resultComment.delete({
@@ -722,8 +962,9 @@ router.delete('/comments/:commentId', authMiddleware, async (req, res) => {
     })
 
     res.json({ message: 'Комментарий удалён' })
+
   } catch (error) {
-    console.error('Delete comment error:', error)
+    console.error('❌ Delete comment error:', error)
     res.status(500).json({ error: 'Ошибка сервера' })
   }
 })

@@ -1,10 +1,27 @@
+/**
+ * ==========================================
+ * ГЛАВНЫЙ ФАЙЛ СЕРВЕРА (index.js)
+ * ==========================================
+ * 
+ * TestMaster Backend v2.0.0
+ * 
+ * Основные функции:
+ * - Аутентификация и авторизация
+ * - Управление тестами и экзаменами
+ * - Результаты и статистика
+ * - Админ-панель
+ */
+
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
 
-// Routes
+// ==========================================
+// ИМПОРТ МАРШРУТОВ
+// ==========================================
+
 import authRoutes from './routes/auth.js'
 import testsRoutes from './routes/tests.js'
 import usersRoutes from './routes/users.js'
@@ -14,48 +31,139 @@ import exportRoutes from './routes/export.js'
 import importRoutes from './routes/import.js'
 import adminRoutes from './routes/admin.js'
 
+// ==========================================
+// КОНФИГУРАЦИЯ
+// ==========================================
+
 dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3001
 
-// Security middleware
+// ==========================================
+// БЕЗОПАСНОСТЬ
+// ==========================================
+
+/**
+ * Helmet - защита HTTP заголовков
+ * Устанавливает различные заголовки безопасности
+ */
 app.use(helmet())
+
+/**
+ * CORS - разрешаем запросы с фронтенда
+ */
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }))
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // limit each IP to 200 requests per windowMs
-  message: { error: 'Слишком много запросов, попробуйте позже' }
-})
-app.use(limiter)
+// ==========================================
+// ОГРАНИЧЕНИЕ ЗАПРОСОВ (Rate Limiting)
+// ==========================================
 
-// Stricter rate limit for auth routes
+/**
+ * Общий лимит: 200 запросов за 15 минут
+ * Защита от DDoS атак
+ */
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 минут
+  max: 200,                   // Максимум запросов
+  message: { 
+    error: 'Слишком много запросов. Попробуйте через несколько минут.' 
+  }
+})
+app.use(generalLimiter)
+
+/**
+ * Строгий лимит для авторизации: 15 попыток за 15 минут
+ * Защита от брутфорса паролей
+ */
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15, // 15 attempts per 15 min
-  message: { error: 'Слишком много попыток, попробуйте через 15 минут' }
+  windowMs: 15 * 60 * 1000,  // 15 минут
+  max: 15,                    // Максимум попыток
+  message: { 
+    error: 'Слишком много попыток входа. Попробуйте через 15 минут.' 
+  }
 })
 
-// Body parser (increased limit for file uploads)
+// ==========================================
+// ПАРСИНГ ТЕЛА ЗАПРОСА
+// ==========================================
+
+/**
+ * JSON и URL-encoded парсеры
+ * Увеличенный лимит для загрузки файлов
+ */
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 
-// API Routes
+// ==========================================
+// API МАРШРУТЫ
+// ==========================================
+
+/**
+ * /api/auth - Аутентификация
+ * - Регистрация, вход, выход
+ * - Сброс пароля, подтверждение email
+ * - Двухфакторная аутентификация (2FA)
+ */
 app.use('/api/auth', authLimiter, authRoutes)
+
+/**
+ * /api/tests - Тесты и экзамены
+ * - CRUD операции с тестами
+ * - Поиск и фильтрация
+ * - Отправка и просмотр результатов
+ */
 app.use('/api/tests', testsRoutes)
+
+/**
+ * /api/users - Управление пользователями
+ * - Профиль, аватар
+ * - Настройки аккаунта
+ */
 app.use('/api/users', usersRoutes)
+
+/**
+ * /api/notifications - Уведомления
+ * - Получение, отметка прочитанными
+ */
 app.use('/api/notifications', notificationsRoutes)
+
+/**
+ * /api/categories - Категории тестов
+ * - Создание, редактирование категорий
+ */
 app.use('/api/categories', categoriesRoutes)
+
+/**
+ * /api/export - Экспорт данных
+ * - PDF, Excel отчёты
+ */
 app.use('/api/export', exportRoutes)
+
+/**
+ * /api/import - Импорт вопросов
+ * - Загрузка вопросов из файла
+ */
 app.use('/api/import', importRoutes)
+
+/**
+ * /api/admin - Админ-панель
+ * - Статистика, управление пользователями
+ * - Модерация контента
+ */
 app.use('/api/admin', adminRoutes)
 
-// Health check
+// ==========================================
+// СЛУЖЕБНЫЕ ЭНДПОИНТЫ
+// ==========================================
+
+/**
+ * GET /api/health
+ * Проверка работоспособности сервера
+ */
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -80,29 +188,52 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-// Error handler
+// ==========================================
+// ОБРАБОТКА ОШИБОК
+// ==========================================
+
+/**
+ * Глобальный обработчик ошибок
+ * Логирует ошибки и возвращает клиенту безопасное сообщение
+ */
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message)
+  console.error('❌ Server Error:', err.message)
   console.error(err.stack)
-  res.status(500).json({ error: 'Внутренняя ошибка сервера' })
+  
+  res.status(500).json({ 
+    error: 'Внутренняя ошибка сервера. Попробуйте позже.' 
+  })
 })
 
-// 404 handler
+/**
+ * Обработчик 404
+ * Для несуществующих маршрутов
+ */
 app.use((req, res) => {
-  res.status(404).json({ error: 'Маршрут не найден' })
+  res.status(404).json({ 
+    error: 'Маршрут не найден' 
+  })
 })
+
+// ==========================================
+// ЗАПУСК СЕРВЕРА
+// ==========================================
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 TestMaster Backend v2.0.0`)
-  console.log(`📍 Server: http://localhost:${PORT}`)
-  console.log(`💚 Health: http://localhost:${PORT}/api/health`)
-  console.log(`\n📋 Available endpoints:`)
-  console.log(`   /api/auth      - Authentication, 2FA, email verification`)
-  console.log(`   /api/tests     - Tests CRUD, search, share links`)
-  console.log(`   /api/users     - User profile, avatar`)
-  console.log(`   /api/notifications - Notifications`)
-  console.log(`   /api/categories    - Test categories`)
-  console.log(`   /api/export    - PDF/Excel export`)
-  console.log(`   /api/import    - Import questions`)
-  console.log(`   /api/admin     - Admin panel\n`)
+  console.log('\n' + '='.repeat(50))
+  console.log('🚀 TestMaster Backend v2.0.0')
+  console.log('='.repeat(50))
+  console.log(`📍 Сервер:      http://localhost:${PORT}`)
+  console.log(`💚 Health:      http://localhost:${PORT}/api/health`)
+  console.log('='.repeat(50))
+  console.log('\n📋 Доступные API маршруты:\n')
+  console.log('   /api/auth          - Аутентификация, 2FA, email')
+  console.log('   /api/tests         - Тесты, вопросы, результаты')
+  console.log('   /api/users         - Профиль пользователя')
+  console.log('   /api/notifications - Уведомления')
+  console.log('   /api/categories    - Категории тестов')
+  console.log('   /api/export        - Экспорт PDF/Excel')
+  console.log('   /api/import        - Импорт вопросов')
+  console.log('   /api/admin         - Админ-панель')
+  console.log('\n' + '='.repeat(50) + '\n')
 })

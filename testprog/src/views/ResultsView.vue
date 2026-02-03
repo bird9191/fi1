@@ -1,143 +1,265 @@
+<!--
+  ==========================================
+  ИСТОРИЯ РЕЗУЛЬТАТОВ (ResultsView.vue)
+  ==========================================
+  
+  Страница со списком результатов пройденных тестов:
+  - Таблица с результатами
+  - Фильтрация и сортировка
+  - Переход к деталям
+-->
+
 <template>
   <div class="results-page">
+    
+    <!-- ==========================================
+         ЗАГОЛОВОК
+         ========================================== -->
     <header class="page-header">
-      <h1>Мои результаты</h1>
-      <p>История прохождения тестов</p>
+      <h1>📊 Мои результаты</h1>
+      <p>История всех пройденных тестов и экзаменов</p>
     </header>
 
-    <div v-if="testsStore.isLoading" class="loading">
+    <!-- ==========================================
+         СОСТОЯНИЕ ЗАГРУЗКИ
+         ========================================== -->
+    <div v-if="isLoading" class="loading">
       <div class="spinner"></div>
       <p>Загрузка результатов...</p>
     </div>
 
-    <div v-else-if="testsStore.userResults.length === 0" class="empty-state">
-      <h3>Пока нет результатов</h3>
-      <p>Пройдите свой первый тест, чтобы увидеть результаты здесь</p>
+    <!-- ==========================================
+         ПУСТОЕ СОСТОЯНИЕ
+         ========================================== -->
+    <div v-else-if="results.length === 0" class="empty-state">
+      <h3>📝 Нет результатов</h3>
+      <p>Вы ещё не прошли ни одного теста</p>
       <router-link to="/tests" class="btn btn-primary">
-        Найти тест
+        🎯 Пройти тест
       </router-link>
     </div>
 
-    <div v-else class="results-content">
+    <!-- ==========================================
+         СПИСОК РЕЗУЛЬТАТОВ
+         ========================================== -->
+    <div v-else class="results-list">
+      
       <!-- Статистика -->
-      <div class="stats-grid">
+      <div class="stats-row">
         <div class="stat-card">
-          <span class="stat-value">{{ testsStore.userResults.length }}</span>
-          <span class="stat-label">Тестов пройдено</span>
+          <div class="stat-value">{{ results.length }}</div>
+          <div class="stat-label">Всего тестов</div>
         </div>
         <div class="stat-card">
-          <span class="stat-value">{{ averageScore }}%</span>
-          <span class="stat-label">Средний балл</span>
+          <div class="stat-value">{{ averageScore }}%</div>
+          <div class="stat-label">Средний балл</div>
         </div>
         <div class="stat-card">
-          <span class="stat-value">{{ bestScore }}%</span>
-          <span class="stat-label">Лучший результат</span>
+          <div class="stat-value">{{ passedCount }}</div>
+          <div class="stat-label">Пройдено</div>
         </div>
       </div>
 
-      <!-- Список результатов -->
-      <div class="results-list">
-        <h2>История</h2>
-
-        <router-link
-          v-for="result in sortedResults"
-          :key="result.id"
-          :to="`/results/${result.id}`"
-          class="result-card"
-        >
-          <div class="result-main">
-            <div class="result-info">
-              <h3>{{ result.testTitle }}</h3>
-              <span class="result-date">{{ formatDate(result.completedAt) }}</span>
-            </div>
-
-            <div class="result-score" :class="getScoreClass(result.percentage)">
-              {{ result.percentage }}%
-            </div>
-          </div>
-
-          <div class="result-details">
-            <span>{{ result.score }} из {{ result.maxScore }} баллов</span>
-            <span class="result-mode">{{ result.mode === 'training' ? 'Тренировка' : 'Экзамен' }}</span>
-          </div>
-
-          <div class="result-bar">
-            <div
-              class="result-bar-fill"
-              :class="getScoreClass(result.percentage)"
-              :style="{ width: result.percentage + '%' }"
-            ></div>
-          </div>
-        </router-link>
+      <!-- Таблица результатов -->
+      <div class="results-table-wrapper">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Тест</th>
+              <th>Тип</th>
+              <th>Дата</th>
+              <th>Результат</th>
+              <th>Статус</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="result in results" :key="result.id">
+              <!-- Название теста -->
+              <td class="test-name">
+                {{ result.testTitle }}
+              </td>
+              
+              <!-- Тип -->
+              <td>
+                <span class="type-badge" :class="result.testType || 'test'">
+                  {{ result.testType === 'exam' ? 'Экзамен' : 'Тест' }}
+                </span>
+              </td>
+              
+              <!-- Дата -->
+              <td class="date">
+                {{ formatDate(result.completedAt) }}
+              </td>
+              
+              <!-- Результат -->
+              <td>
+                <span class="score" :class="getScoreClass(result.score)">
+                  {{ result.score }}%
+                </span>
+              </td>
+              
+              <!-- Статус -->
+              <td>
+                <span class="status" :class="{ passed: result.passed }">
+                  {{ result.passed ? '✓ Сдано' : '✗ Не сдано' }}
+                </span>
+              </td>
+              
+              <!-- Действия -->
+              <td class="actions">
+                <router-link 
+                  :to="`/results/${result.id}`" 
+                  class="btn btn-sm btn-outline"
+                >
+                  Подробнее
+                </router-link>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+      
     </div>
+    
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useTestsStore } from '@/stores/tests'
+/**
+ * ==========================================
+ * ЛОГИКА ИСТОРИИ РЕЗУЛЬТАТОВ
+ * ==========================================
+ */
 
-const testsStore = useTestsStore()
+import { ref, computed, onMounted } from 'vue'
+import api from '@/services/api'
 
-const sortedResults = computed(() =>
-  [...testsStore.userResults].sort((a, b) =>
-    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
-  )
+// ==========================================
+// ИНТЕРФЕЙСЫ
+// ==========================================
+
+interface TestResult {
+  id: string
+  testId: string
+  testTitle: string
+  testType: 'test' | 'exam'
+  score: number
+  passed: boolean
+  completedAt: string
+}
+
+// ==========================================
+// СОСТОЯНИЕ
+// ==========================================
+
+/** Флаг загрузки */
+const isLoading = ref(true)
+
+/** Список результатов */
+const results = ref<TestResult[]>([])
+
+// ==========================================
+// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
+// ==========================================
+
+/** Средний балл */
+const averageScore = computed(() => {
+  if (results.value.length === 0) return 0
+  const sum = results.value.reduce((acc, r) => acc + r.score, 0)
+  return Math.round(sum / results.value.length)
+})
+
+/** Количество пройденных */
+const passedCount = computed(() => 
+  results.value.filter(r => r.passed).length
 )
 
-const averageScore = computed(() => {
-  if (testsStore.userResults.length === 0) return 0
-  const sum = testsStore.userResults.reduce((acc, r) => acc + r.percentage, 0)
-  return Math.round(sum / testsStore.userResults.length)
-})
+// ==========================================
+// МЕТОДЫ
+// ==========================================
 
-const bestScore = computed(() => {
-  if (testsStore.userResults.length === 0) return 0
-  return Math.max(...testsStore.userResults.map(r => r.percentage))
-})
-
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString('ru-RU', {
+/**
+ * Форматирует дату
+ */
+function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ru-RU', {
     day: 'numeric',
-    month: 'long',
+    month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   })
 }
 
-function getScoreClass(percentage: number): string {
-  if (percentage >= 80) return 'excellent'
-  if (percentage >= 60) return 'good'
-  if (percentage >= 40) return 'average'
+/**
+ * Возвращает класс для результата
+ */
+function getScoreClass(score: number): string {
+  if (score >= 80) return 'excellent'
+  if (score >= 60) return 'good'
+  if (score >= 40) return 'average'
   return 'poor'
 }
 
+/**
+ * Загружает результаты
+ */
+async function loadResults(): Promise<void> {
+  isLoading.value = true
+  
+  try {
+    const response = await api.getMyResults()
+    results.value = response.data
+  } catch (error) {
+    console.error('Ошибка загрузки результатов:', error)
+    results.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// ==========================================
+// ЖИЗНЕННЫЙ ЦИКЛ
+// ==========================================
+
 onMounted(() => {
-  testsStore.loadUserResults()
+  loadResults()
 })
 </script>
 
 <style scoped>
+/* ==========================================
+   СТИЛИ ИСТОРИИ РЕЗУЛЬТАТОВ
+   ========================================== */
+
 .results-page {
   padding: 2rem;
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
 }
+
+/* ==========================================
+   ЗАГОЛОВОК
+   ========================================== */
 
 .page-header {
   margin-bottom: 2rem;
 }
 
 .page-header h1 {
-  font-size: 2rem;
+  font-size: 1.8rem;
   margin-bottom: 0.5rem;
 }
 
 .page-header p {
   color: var(--color-text-muted);
 }
+
+/* ==========================================
+   СОСТОЯНИЯ
+   ========================================== */
 
 .loading {
   display: flex;
@@ -178,7 +300,11 @@ onMounted(() => {
   margin-bottom: 1.5rem;
 }
 
-.stats-grid {
+/* ==========================================
+   СТАТИСТИКА
+   ========================================== */
+
+.stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
@@ -189,12 +315,8 @@ onMounted(() => {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .stat-value {
@@ -204,113 +326,147 @@ onMounted(() => {
 }
 
 .stat-label {
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-}
-
-.results-list h2 {
-  font-size: 1.25rem;
-  margin-bottom: 1rem;
-}
-
-.result-card {
-  display: block;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.result-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border-color: var(--color-primary);
-}
-
-.result-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.75rem;
-}
-
-.result-info h3 {
-  font-size: 1.1rem;
-  margin-bottom: 0.25rem;
-}
-
-.result-date {
   font-size: 0.85rem;
   color: var(--color-text-muted);
+  margin-top: 0.25rem;
 }
 
-.result-score {
-  font-size: 1.5rem;
-  font-weight: 700;
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
+/* ==========================================
+   ТАБЛИЦА
+   ========================================== */
+
+.results-table-wrapper {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  overflow: hidden;
 }
 
-.result-score.excellent {
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.results-table th,
+.results-table td {
+  padding: 1rem;
+  text-align: left;
+}
+
+.results-table th {
+  background: var(--color-background);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.results-table td {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.results-table tr:last-child td {
+  border-bottom: none;
+}
+
+.results-table tr:hover td {
+  background: var(--color-background);
+}
+
+/* Название теста */
+.test-name {
+  font-weight: 500;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Бейдж типа */
+.type-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+
+.type-badge.test {
   background: rgba(34, 197, 94, 0.15);
   color: #4ade80;
 }
 
-.result-score.good {
+.type-badge.exam {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+/* Дата */
+.date {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* Результат */
+.score {
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+
+.score.excellent {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.score.good {
   background: rgba(59, 130, 246, 0.15);
   color: #60a5fa;
 }
 
-.result-score.average {
+.score.average {
   background: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
 }
 
-.result-score.poor {
+.score.poor {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
 }
 
-.result-details {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-  margin-bottom: 0.75rem;
+/* Статус */
+.status {
+  font-size: 0.85rem;
+  color: #f87171;
 }
 
-.result-mode {
-  padding: 0.2rem 0.5rem;
-  background: var(--color-background);
-  border-radius: 6px;
-  font-size: 0.8rem;
+.status.passed {
+  color: #4ade80;
 }
 
-.result-bar {
-  height: 6px;
-  background: var(--color-border);
-  border-radius: 3px;
-  overflow: hidden;
+/* Действия */
+.actions {
+  text-align: right;
 }
 
-.result-bar-fill {
-  height: 100%;
-  transition: width 0.5s ease-out;
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
 }
 
-.result-bar-fill.excellent { background: #4ade80; }
-.result-bar-fill.good { background: #60a5fa; }
-.result-bar-fill.average { background: #fbbf24; }
-.result-bar-fill.poor { background: #f87171; }
+/* ==========================================
+   АДАПТИВНОСТЬ
+   ========================================== */
 
-@media (max-width: 600px) {
-  .stats-grid {
+@media (max-width: 768px) {
+  .stats-row {
     grid-template-columns: 1fr;
+  }
+
+  .results-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .results-table {
+    min-width: 600px;
   }
 }
 </style>
-

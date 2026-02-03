@@ -1,50 +1,96 @@
+<!--
+  ==========================================
+  НАВИГАЦИОННАЯ ПАНЕЛЬ (NavBar.vue)
+  ==========================================
+  
+  Верхняя панель навигации с:
+  - Логотипом TestMaster
+  - Переключателем темы (светлая/тёмная)
+  - Аватаром пользователя
+  - Меню-гамбургером
+  - Боковой панелью (sidebar) справа
+-->
+
 <template>
+  <!-- ==========================================
+       ВЕРХНЯЯ ПАНЕЛЬ НАВИГАЦИИ
+       ========================================== -->
   <nav class="navbar">
     <div class="navbar-content">
+      
+      <!-- Логотип (ведёт на главную) -->
       <router-link to="/" class="logo">
         <span class="logo-text">TestMaster</span>
       </router-link>
 
+      <!-- Правая часть навбара -->
       <div class="nav-right">
-        <button class="theme-toggle" @click="toggleTheme" :title="isDark ? 'Светлая тема' : 'Тёмная тема'">
-          <span v-if="isDark" class="theme-icon">L</span>
-          <span v-else class="theme-icon">D</span>
+        
+        <!-- Кнопка переключения темы -->
+        <button 
+          class="theme-toggle" 
+          @click="toggleTheme" 
+          :title="isDark ? 'Светлая тема' : 'Тёмная тема'"
+        >
+          <span v-if="isDark" class="theme-icon">☀</span>
+          <span v-else class="theme-icon">🌙</span>
         </button>
 
+        <!-- Аватар пользователя (если авторизован) -->
         <template v-if="authStore.isAuthenticated">
           <router-link to="/profile" class="user-avatar-btn">
-            <img v-if="authStore.currentUser?.avatar" :src="authStore.currentUser.avatar" alt="Avatar" class="avatar-img" />
+            <img 
+              v-if="authStore.currentUser?.avatar" 
+              :src="authStore.currentUser.avatar" 
+              alt="Аватар" 
+              class="avatar-img" 
+            />
             <span v-else class="avatar-placeholder"></span>
           </router-link>
         </template>
+        
+        <!-- Кнопка входа (если не авторизован) -->
         <template v-else>
           <router-link to="/login" class="btn btn-outline btn-sm">
             Войти
           </router-link>
         </template>
 
+        <!-- Кнопка-гамбургер для открытия меню -->
         <button class="menu-toggle" @click="sidebarOpen = true">
           <span class="hamburger-line"></span>
           <span class="hamburger-line"></span>
           <span class="hamburger-line"></span>
         </button>
+        
       </div>
     </div>
   </nav>
 
-  <!-- Overlay -->
+  <!-- ==========================================
+       ЗАТЕМНЕНИЕ ПРИ ОТКРЫТОМ МЕНЮ
+       ========================================== -->
   <Transition name="fade">
-    <div v-if="sidebarOpen" class="sidebar-overlay" @click="sidebarOpen = false"></div>
+    <div 
+      v-if="sidebarOpen" 
+      class="sidebar-overlay" 
+      @click="sidebarOpen = false"
+    ></div>
   </Transition>
 
-  <!-- Sidebar (Right) -->
+  <!-- ==========================================
+       БОКОВАЯ ПАНЕЛЬ (СПРАВА)
+       ========================================== -->
   <Transition name="slide-right">
     <aside v-if="sidebarOpen" class="sidebar">
+      
+      <!-- Заголовок сайдбара -->
       <div class="sidebar-header">
         <span class="sidebar-title">Меню</span>
         <button class="close-btn" @click="sidebarOpen = false">×</button>
       </div>
 
+      <!-- Информация о пользователе (если авторизован) -->
       <router-link
         v-if="authStore.isAuthenticated"
         to="/profile"
@@ -52,22 +98,35 @@
         @click="sidebarOpen = false"
       >
         <div class="user-info">
+          <!-- Аватар -->
           <span class="user-avatar-large">
-            <img v-if="authStore.currentUser?.avatar" :src="authStore.currentUser.avatar" alt="Avatar" class="avatar-img-large" />
+            <img 
+              v-if="authStore.currentUser?.avatar" 
+              :src="authStore.currentUser.avatar" 
+              alt="Аватар" 
+              class="avatar-img-large" 
+            />
             <span v-else class="avatar-placeholder-large"></span>
           </span>
+          
+          <!-- Имя, email и роль -->
           <div class="user-details">
             <span class="user-name-large">{{ authStore.currentUser?.name }}</span>
             <span class="user-email">{{ authStore.currentUser?.email }}</span>
             <span class="user-role-badge" :class="authStore.currentUser?.role">
-              {{ authStore.isAdmin ? 'Админ' : authStore.isTeacher ? 'Учитель' : 'Студент' }}
+              {{ getRoleName }}
             </span>
           </div>
         </div>
       </router-link>
 
+      <!-- Навигационные ссылки -->
       <nav class="sidebar-nav">
+        
+        <!-- ДЛЯ АВТОРИЗОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ -->
         <template v-if="authStore.isAuthenticated">
+          
+          <!-- Общие ссылки -->
           <router-link to="/profile" class="sidebar-link" @click="sidebarOpen = false">
             Мой профиль
           </router-link>
@@ -78,29 +137,35 @@
             Панель управления
           </router-link>
 
+          <!-- Только для учителей -->
           <template v-if="authStore.isTeacher">
             <router-link to="/tests/create" class="sidebar-link highlight" @click="sidebarOpen = false">
               Создать тест
             </router-link>
           </template>
 
+          <!-- Только для студентов -->
           <template v-if="authStore.isStudent">
             <router-link to="/results" class="sidebar-link" @click="sidebarOpen = false">
               Мои результаты
             </router-link>
           </template>
 
+          <!-- Только для админов -->
           <template v-if="authStore.isAdmin">
             <router-link to="/admin" class="sidebar-link admin" @click="sidebarOpen = false">
               Админ-панель
             </router-link>
           </template>
 
+          <!-- Кнопка выхода -->
           <button class="sidebar-link logout" @click="handleLogout">
             Выйти из аккаунта
           </button>
+          
         </template>
 
+        <!-- ДЛЯ НЕАВТОРИЗОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ -->
         <template v-else>
           <router-link to="/tests" class="sidebar-link" @click="sidebarOpen = false">
             Каталог тестов
@@ -112,53 +177,107 @@
             Регистрация
           </router-link>
         </template>
+        
       </nav>
 
+      <!-- Футер сайдбара -->
       <div class="sidebar-footer">
-        <p>TestMaster v1.0</p>
+        <p>TestMaster v2.0</p>
       </div>
+      
     </aside>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+/**
+ * ==========================================
+ * ЛОГИКА НАВИГАЦИОННОЙ ПАНЕЛИ
+ * ==========================================
+ */
+
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+
+// ==========================================
+// ХРАНИЛИЩА И РОУТЕР
+// ==========================================
 
 const router = useRouter()
 const authStore = useAuthStore()
 
+// ==========================================
+// СОСТОЯНИЕ КОМПОНЕНТА
+// ==========================================
+
+/** Открыта ли боковая панель */
 const sidebarOpen = ref(false)
+
+/** Включена ли тёмная тема */
 const isDark = ref(true)
 
-function toggleTheme() {
+// ==========================================
+// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
+// ==========================================
+
+/** Название роли пользователя на русском */
+const getRoleName = computed(() => {
+  if (authStore.isAdmin) return 'Админ'
+  if (authStore.isTeacher) return 'Учитель'
+  return 'Студент'
+})
+
+// ==========================================
+// МЕТОДЫ
+// ==========================================
+
+/**
+ * Переключить тему (светлая/тёмная)
+ */
+function toggleTheme(): void {
   isDark.value = !isDark.value
+  
   if (isDark.value) {
+    // Тёмная тема (по умолчанию)
     document.documentElement.removeAttribute('data-theme')
     localStorage.setItem('theme', 'dark')
   } else {
+    // Светлая тема
     document.documentElement.setAttribute('data-theme', 'light')
     localStorage.setItem('theme', 'light')
   }
 }
 
+/**
+ * Выйти из аккаунта
+ */
+function handleLogout(): void {
+  authStore.logout()
+  sidebarOpen.value = false
+  router.push('/')
+}
+
+// ==========================================
+// ЖИЗНЕННЫЙ ЦИКЛ
+// ==========================================
+
 onMounted(() => {
+  // Восстановить тему из localStorage
   const savedTheme = localStorage.getItem('theme')
   if (savedTheme === 'light') {
     isDark.value = false
     document.documentElement.setAttribute('data-theme', 'light')
   }
 })
-
-function handleLogout() {
-  authStore.logout()
-  sidebarOpen.value = false
-  router.push('/')
-}
 </script>
 
 <style scoped>
+/* ==========================================
+   СТИЛИ НАВИГАЦИОННОЙ ПАНЕЛИ
+   ========================================== */
+
+/* Верхняя панель */
 .navbar {
   position: sticky;
   top: 0;
@@ -168,6 +287,7 @@ function handleLogout() {
   box-shadow: none;
 }
 
+/* Контейнер контента */
 .navbar-content {
   display: flex;
   align-items: center;
@@ -176,6 +296,10 @@ function handleLogout() {
   margin: 0 auto;
   padding: 0.875rem 1.5rem;
 }
+
+/* ==========================================
+   ЛОГОТИП
+   ========================================== */
 
 .logo {
   text-decoration: none;
@@ -190,11 +314,19 @@ function handleLogout() {
   background-clip: text;
 }
 
+/* ==========================================
+   ПРАВАЯ ЧАСТЬ НАВБАРА
+   ========================================== */
+
 .nav-right {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
+
+/* ==========================================
+   КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМЫ
+   ========================================== */
 
 .theme-toggle {
   width: 40px;
@@ -216,9 +348,11 @@ function handleLogout() {
 
 .theme-icon {
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text);
 }
+
+/* ==========================================
+   АВАТАР ПОЛЬЗОВАТЕЛЯ
+   ========================================== */
 
 .user-avatar-btn {
   width: 44px;
@@ -254,16 +388,9 @@ function handleLogout() {
   display: none;
 }
 
-.avatar-img-large {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.avatar-placeholder-large {
-  display: none;
-}
+/* ==========================================
+   КНОПКА-ГАМБУРГЕР
+   ========================================== */
 
 .menu-toggle {
   display: flex;
@@ -282,7 +409,10 @@ function handleLogout() {
   border-radius: 1px;
 }
 
-/* Sidebar Overlay */
+/* ==========================================
+   ЗАТЕМНЕНИЕ (OVERLAY)
+   ========================================== */
+
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -291,7 +421,10 @@ function handleLogout() {
   z-index: 100;
 }
 
-/* Sidebar - RIGHT side */
+/* ==========================================
+   БОКОВАЯ ПАНЕЛЬ (SIDEBAR)
+   ========================================== */
+
 .sidebar {
   position: fixed;
   top: 0;
@@ -307,6 +440,7 @@ function handleLogout() {
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
 }
 
+/* Заголовок сайдбара */
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -321,6 +455,7 @@ function handleLogout() {
   color: var(--color-text);
 }
 
+/* Кнопка закрытия */
 .close-btn {
   width: 36px;
   height: 36px;
@@ -341,6 +476,10 @@ function handleLogout() {
   color: var(--color-text);
   background: var(--accent-glow);
 }
+
+/* ==========================================
+   ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ В САЙДБАРЕ
+   ========================================== */
 
 .sidebar-user {
   display: block;
@@ -378,6 +517,17 @@ function handleLogout() {
   border: none;
 }
 
+.avatar-img-large {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-placeholder-large {
+  display: none;
+}
+
 .user-details {
   display: flex;
   flex-direction: column;
@@ -395,6 +545,7 @@ function handleLogout() {
   color: var(--color-text-muted);
 }
 
+/* Бейдж роли пользователя */
 .user-role-badge {
   display: inline-block;
   margin-top: 0.25rem;
@@ -420,26 +571,17 @@ function handleLogout() {
   color: #f87171;
 }
 
+/* ==========================================
+   НАВИГАЦИЯ В САЙДБАРЕ
+   ========================================== */
+
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
   padding: 1rem 0;
 }
 
-.nav-section {
-  padding: 0.75rem 1.5rem;
-}
-
-.nav-section-title {
-  display: block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
-  margin-bottom: 0.75rem;
-}
-
+/* Ссылка в меню */
 .sidebar-link {
   display: block;
   width: 100%;
@@ -465,6 +607,7 @@ function handleLogout() {
   color: var(--color-primary);
 }
 
+/* Выделенная ссылка (создать тест) */
 .sidebar-link.highlight {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(6, 182, 212, 0.12));
   border: 1px solid rgba(139, 92, 246, 0.2);
@@ -474,6 +617,7 @@ function handleLogout() {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
 }
 
+/* Ссылка админ-панели */
 .sidebar-link.admin {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(249, 115, 22, 0.1));
   border: 1px solid rgba(239, 68, 68, 0.2);
@@ -483,6 +627,7 @@ function handleLogout() {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(249, 115, 22, 0.2));
 }
 
+/* Кнопка выхода */
 .sidebar-link.logout {
   color: #f87171;
 }
@@ -490,6 +635,10 @@ function handleLogout() {
 .sidebar-link.logout:hover {
   background: rgba(239, 68, 68, 0.1);
 }
+
+/* ==========================================
+   ФУТЕР САЙДБАРА
+   ========================================== */
 
 .sidebar-footer {
   padding: 1rem 1.5rem;
@@ -503,7 +652,11 @@ function handleLogout() {
   margin: 0;
 }
 
-/* Transitions */
+/* ==========================================
+   АНИМАЦИИ ПЕРЕХОДОВ
+   ========================================== */
+
+/* Плавное появление/исчезание overlay */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;
@@ -514,6 +667,7 @@ function handleLogout() {
   opacity: 0;
 }
 
+/* Выезд сайдбара справа */
 .slide-right-enter-active,
 .slide-right-leave-active {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -524,11 +678,11 @@ function handleLogout() {
   transform: translateX(100%);
 }
 
-@media (max-width: 480px) {
-  .user-name {
-    display: none;
-  }
+/* ==========================================
+   АДАПТИВНОСТЬ (МОБИЛЬНЫЕ УСТРОЙСТВА)
+   ========================================== */
 
+@media (max-width: 480px) {
   .logo-text {
     font-size: 1.15rem;
   }

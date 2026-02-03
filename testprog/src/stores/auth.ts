@@ -1,25 +1,71 @@
+/**
+ * ============================================
+ * ХРАНИЛИЩЕ АВТОРИЗАЦИИ (Auth Store)
+ * ============================================
+ * 
+ * Управляет состоянием пользователя:
+ * - Вход и регистрация
+ * - Восстановление сессии
+ * - Управление профилем
+ * - Смена пароля
+ */
+
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, RegisterData, LoginData } from '@/types'
 import { api } from '@/services/api'
 
 export const useAuthStore = defineStore('auth', () => {
+  // ==========================================
+  // СОСТОЯНИЕ
+  // ==========================================
+
+  /** Текущий пользователь */
   const currentUser = ref<User | null>(null)
+  
+  /** Флаг загрузки */
   const isLoading = ref(false)
+  
+  /** Текст ошибки */
   const error = ref<string | null>(null)
+  
+  /** Флаг инициализации (сессия восстановлена) */
   const isInitialized = ref(false)
 
+  // ==========================================
+  // ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
+  // ==========================================
+
+  /** Пользователь авторизован? */
   const isAuthenticated = computed(() => currentUser.value !== null)
+  
+  /** Пользователь - учитель? */
   const isTeacher = computed(() => currentUser.value?.role === 'teacher')
+  
+  /** Пользователь - студент? */
   const isStudent = computed(() => currentUser.value?.role === 'student')
+  
+  /** Пользователь - админ? */
   const isAdmin = computed(() => currentUser.value?.role === 'admin')
 
+  // ==========================================
+  // АВТОРИЗАЦИЯ
+  // ==========================================
+
+  /**
+   * Регистрация нового пользователя
+   */
   async function register(data: RegisterData): Promise<boolean> {
     isLoading.value = true
     error.value = null
 
     try {
-      const response = await api.register(data.email, data.password, data.name, data.role)
+      const response = await api.register(
+        data.email, 
+        data.password, 
+        data.name, 
+        data.role
+      )
 
       if (response.error) {
         error.value = response.error
@@ -27,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       if (response.data) {
+        // Сохраняем данные пользователя
         currentUser.value = response.data.user
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('currentUser', JSON.stringify(response.data.user))
@@ -44,6 +91,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Вход в систему
+   */
   async function login(data: LoginData): Promise<boolean> {
     isLoading.value = true
     error.value = null
@@ -57,6 +107,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       if (response.data) {
+        // Сохраняем данные пользователя
         currentUser.value = response.data.user
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('currentUser', JSON.stringify(response.data.user))
@@ -74,18 +125,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Выход из системы
+   */
   function logout() {
     currentUser.value = null
     localStorage.removeItem('currentUser')
     localStorage.removeItem('token')
   }
 
-  // Восстановление сессии при загрузке страницы
+  // ==========================================
+  // ВОССТАНОВЛЕНИЕ СЕССИИ
+  // ==========================================
+
+  /**
+   * Восстановить сессию из localStorage
+   * Вызывается при загрузке приложения
+   */
   function restoreSession() {
     const saved = localStorage.getItem('currentUser')
     const token = localStorage.getItem('token')
 
-    // Сначала восстанавливаем из localStorage (мгновенно)
+    // Мгновенно восстанавливаем из localStorage
     if (saved && token) {
       try {
         currentUser.value = JSON.parse(saved)
@@ -96,65 +157,100 @@ export const useAuthStore = defineStore('auth', () => {
 
     isInitialized.value = true
 
-    // Затем проверяем токен на сервере (в фоне)
+    // Проверяем токен на сервере в фоне
     if (token) {
       verifyToken()
     }
   }
 
-  // Проверка токена на сервере (в фоновом режиме)
+  /**
+   * Проверить токен на сервере (фоновая проверка)
+   */
   async function verifyToken() {
     try {
       const response = await api.getCurrentUser()
+      
       if (response.data) {
-        // Обновляем данные пользователя с сервера
+        // Обновляем данные с сервера
         currentUser.value = response.data.user
         localStorage.setItem('currentUser', JSON.stringify(response.data.user))
-      } else if (response.error?.includes('401') || response.error?.includes('токен') || response.error?.includes('авторизован')) {
+      } else if (
+        response.error?.includes('401') || 
+        response.error?.includes('токен') || 
+        response.error?.includes('авторизован')
+      ) {
         // Токен невалидный - выходим
         logout()
       }
-      // При других ошибках (сеть и т.д.) оставляем пользователя залогиненным
+      // При других ошибках (сеть) оставляем пользователя
     } catch {
-      // Ошибка сети - оставляем пользователя залогиненным
       console.log('Failed to verify token, keeping local session')
     }
   }
 
+  // ==========================================
+  // УПРАВЛЕНИЕ ПРОФИЛЕМ
+  // ==========================================
+
+  /**
+   * Обновить аватар
+   */
   async function updateAvatar(avatarBase64: string | null) {
     if (!currentUser.value) return
 
     const response = await api.updateAvatar(avatarBase64)
+    
     if (response.data) {
       currentUser.value = response.data.user
       localStorage.setItem('currentUser', JSON.stringify(response.data.user))
     }
   }
 
-  async function updateProfile(data: { name?: string; email?: string; phone?: string }) {
+  /**
+   * Обновить профиль
+   */
+  async function updateProfile(data: { 
+    name?: string
+    email?: string
+    phone?: string 
+  }): Promise<boolean> {
     if (!currentUser.value) return false
 
     const response = await api.updateProfile(data)
+    
     if (response.data) {
       currentUser.value = response.data.user
       localStorage.setItem('currentUser', JSON.stringify(response.data.user))
       return true
     }
+    
     return false
   }
 
-  async function changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  /**
+   * Сменить пароль
+   */
+  async function changePassword(
+    currentPassword: string, 
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> {
     const response = await api.changePassword(currentPassword, newPassword)
+    
     if (response.error) {
       return { success: false, error: response.error }
     }
+    
     return { success: true }
   }
 
+  /**
+   * Удалить аккаунт
+   */
   async function deleteAccount(): Promise<boolean> {
     if (!currentUser.value) return false
 
     const response = await api.deleteAccount()
+    
     if (response.error) {
       return false
     }
@@ -163,15 +259,24 @@ export const useAuthStore = defineStore('auth', () => {
     return true
   }
 
+  // ==========================================
+  // ЭКСПОРТ
+  // ==========================================
+
   return {
+    // Состояние
     currentUser,
     isLoading,
     error,
+    isInitialized,
+    
+    // Вычисляемые
     isAuthenticated,
     isTeacher,
     isStudent,
     isAdmin,
-    isInitialized,
+    
+    // Методы
     register,
     login,
     logout,

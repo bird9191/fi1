@@ -1,465 +1,558 @@
+<!--
+  ==========================================
+  СОЗДАНИЕ ТЕСТА (CreateTestView.vue)
+  ==========================================
+  
+  Форма создания нового теста/экзамена:
+  - Выбор типа (тест или экзамен)
+  - Основная информация (название, описание)
+  - Настройки (время, попытки, перемешивание и т.д.)
+  - Добавление вопросов
+-->
+
 <template>
   <div class="create-test-page">
+    
+    <!-- ==========================================
+         ЗАГОЛОВОК
+         ========================================== -->
     <header class="page-header">
-      <router-link to="/dashboard" class="back-link">Назад</router-link>
-      <h1>Создание {{ isExam ? 'экзамена' : 'теста' }}</h1>
+      <router-link to="/dashboard" class="back-link">
+        ← Назад
+      </router-link>
+      <h1>➕ Создать {{ form.type === 'exam' ? 'экзамен' : 'тест' }}</h1>
     </header>
 
-    <!-- Выбор типа -->
-    <div v-if="!typeSelected" class="type-selection">
-      <h2>Что вы хотите создать?</h2>
+    <!-- ==========================================
+         ФОРМА СОЗДАНИЯ
+         ========================================== -->
+    <form @submit.prevent="handleSubmit" class="create-form">
       
-      <div class="type-cards">
-        <button class="type-card" @click="selectType('test')">
-          <div class="type-icon test-icon">T</div>
-          <h3>Тест</h3>
-          <p>Простой формат для быстрой проверки знаний</p>
-          <ul class="type-features">
-            <li>Быстрое создание</li>
-            <li>Без ограничения времени</li>
-            <li>Простые результаты</li>
-            <li>Подходит для самопроверки</li>
-          </ul>
-        </button>
-
-        <button class="type-card" @click="selectType('exam')">
-          <div class="type-icon exam-icon">E</div>
-          <h3>Экзамен</h3>
-          <p>Полноценный контроль знаний</p>
-          <ul class="type-features">
-            <li>Настраиваемый таймер</li>
-            <li>Защита от списывания</li>
-            <li>Режим тренировки</li>
-            <li>Подробная аналитика</li>
-            <li>Проходной балл</li>
-          </ul>
-        </button>
-      </div>
-    </div>
-
-    <!-- Форма создания -->
-    <form v-else @submit.prevent="handleSubmit" class="test-form">
-      <!-- Основная информация -->
+      <!-- ==========================================
+           ШАГ 1: ТИП
+           ========================================== -->
       <section class="form-section">
-        <h2>Основная информация</h2>
+        <h2>1️⃣ Выберите тип</h2>
+        
+        <div class="type-selector">
+          <!-- Тест -->
+          <label class="type-option">
+            <input type="radio" v-model="form.type" value="test" />
+            <div class="type-card">
+              <span class="type-icon">✏️</span>
+              <span class="type-name">Тест</span>
+              <span class="type-desc">
+                Для обучения и тренировки. Может включать подсказки.
+              </span>
+            </div>
+          </label>
+          
+          <!-- Экзамен -->
+          <label class="type-option">
+            <input type="radio" v-model="form.type" value="exam" />
+            <div class="type-card">
+              <span class="type-icon">📋</span>
+              <span class="type-name">Экзамен</span>
+              <span class="type-desc">
+                Строгая проверка знаний с ограничениями.
+              </span>
+            </div>
+          </label>
+        </div>
+      </section>
 
+      <!-- ==========================================
+           ШАГ 2: ОСНОВНАЯ ИНФОРМАЦИЯ
+           ========================================== -->
+      <section class="form-section">
+        <h2>2️⃣ Основная информация</h2>
+        
+        <!-- Название -->
         <div class="form-group">
-          <label for="title">Название {{ isExam ? 'экзамена' : 'теста' }} *</label>
+          <label for="title">Название *</label>
           <input
             id="title"
             v-model="form.title"
             type="text"
-            :placeholder="isExam ? 'Например: Итоговый экзамен по физике' : 'Например: Проверка знаний по теме'"
+            placeholder="Введите название теста..."
             required
           />
         </div>
 
+        <!-- Описание -->
         <div class="form-group">
           <label for="description">Описание</label>
           <textarea
             id="description"
             v-model="form.description"
-            :placeholder="isExam ? 'Инструкции для студентов, правила экзамена...' : 'Краткое описание теста...'"
+            placeholder="Опишите, о чём этот тест..."
             rows="3"
           ></textarea>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="visibility">Видимость</label>
-            <select id="visibility" v-model="form.visibility">
-              <option value="public">Публичный</option>
-              <option value="private">Приватный</option>
-            </select>
-          </div>
+        <!-- Публичность -->
+        <div class="form-group checkbox-group">
+          <label>
+            <input type="checkbox" v-model="form.isPublic" />
+            <span>🌍 Публичный (виден всем пользователям)</span>
+          </label>
+        </div>
+      </section>
 
-          <!-- Таймер только для экзаменов -->
-          <div v-if="isExam" class="form-group">
-            <label for="timeLimit">Лимит времени (минуты)</label>
+      <!-- ==========================================
+           ШАГ 3: НАСТРОЙКИ (для экзаменов)
+           ========================================== -->
+      <section v-if="form.type === 'exam'" class="form-section">
+        <h2>3️⃣ Настройки экзамена</h2>
+        
+        <div class="settings-grid">
+          <!-- Ограничение времени -->
+          <div class="form-group">
+            <label for="timeLimit">⏱ Время (минуты)</label>
             <input
               id="timeLimit"
               v-model.number="form.timeLimit"
               type="number"
-              min="0"
-              placeholder="0 = без ограничений"
+              min="1"
+              max="180"
+              placeholder="0 = без ограничения"
             />
           </div>
-        </div>
-      </section>
 
-      <!-- Настройки экзамена -->
-      <section v-if="isExam" class="form-section exam-settings">
-        <h2>Настройки экзамена</h2>
-
-        <div class="settings-grid">
-          <label class="setting-item">
-            <input type="checkbox" v-model="form.strictMode" />
-            <div class="setting-info">
-              <span class="setting-title">Строгий режим</span>
-              <span class="setting-desc">Отмена экзамена при переключении вкладки</span>
-            </div>
-          </label>
-
-          <label class="setting-item">
-            <input type="checkbox" v-model="form.allowTrainingMode" />
-            <div class="setting-info">
-              <span class="setting-title">Режим тренировки</span>
-              <span class="setting-desc">Разрешить проходить без строгих условий</span>
-            </div>
-          </label>
-
-          <label class="setting-item">
-            <input type="checkbox" v-model="form.shuffleQuestions" />
-            <div class="setting-info">
-              <span class="setting-title">Перемешать вопросы</span>
-              <span class="setting-desc">Случайный порядок для каждого студента</span>
-            </div>
-          </label>
-
-          <label class="setting-item">
-            <input type="checkbox" v-model="form.shuffleOptions" />
-            <div class="setting-info">
-              <span class="setting-title">Перемешать ответы</span>
-              <span class="setting-desc">Случайный порядок вариантов ответов</span>
-            </div>
-          </label>
-
-          <label class="setting-item">
-            <input type="checkbox" v-model="form.showHints" />
-            <div class="setting-info">
-              <span class="setting-title">Подсказки</span>
-              <span class="setting-desc">Показывать подсказки в режиме тренировки</span>
-            </div>
-          </label>
-
-          <label class="setting-item">
-            <input type="checkbox" v-model="form.showExplanations" />
-            <div class="setting-info">
-              <span class="setting-title">Объяснения</span>
-              <span class="setting-desc">Показывать объяснения после ответа</span>
-            </div>
-          </label>
-        </div>
-
-        <div class="form-row">
+          <!-- Проходной балл -->
           <div class="form-group">
-            <label for="passingScore">Проходной балл (%)</label>
+            <label for="passingScore">🎯 Проходной балл (%)</label>
             <input
               id="passingScore"
               v-model.number="form.passingScore"
               type="number"
-              min="0"
+              min="1"
               max="100"
               placeholder="60"
             />
           </div>
 
+          <!-- Максимум попыток -->
           <div class="form-group">
-            <label for="maxAttempts">Макс. попыток</label>
+            <label for="maxAttempts">🔄 Макс. попыток</label>
             <input
               id="maxAttempts"
               v-model.number="form.maxAttempts"
               type="number"
               min="0"
-              placeholder="0 = без ограничений"
+              max="100"
+              placeholder="0 = без ограничения"
             />
           </div>
         </div>
+
+        <!-- Чекбоксы настроек -->
+        <div class="settings-checkboxes">
+          <label class="checkbox-item">
+            <input type="checkbox" v-model="form.strictMode" />
+            <span>🔒 Строгий режим (отмена при переключении вкладки)</span>
+          </label>
+          
+          <label class="checkbox-item">
+            <input type="checkbox" v-model="form.shuffleQuestions" />
+            <span>🔀 Перемешивать вопросы</span>
+          </label>
+          
+          <label class="checkbox-item">
+            <input type="checkbox" v-model="form.shuffleOptions" />
+            <span>🎲 Перемешивать варианты ответов</span>
+          </label>
+          
+          <label class="checkbox-item">
+            <input type="checkbox" v-model="form.showHints" />
+            <span>💡 Показывать подсказки</span>
+          </label>
+        </div>
       </section>
 
-      <!-- Вопросы -->
-      <section class="form-section">
+      <!-- Настройки для тестов -->
+      <section v-else class="form-section">
+        <h2>3️⃣ Настройки теста</h2>
+        
+        <div class="settings-checkboxes">
+          <label class="checkbox-item">
+            <input type="checkbox" v-model="form.allowTrainingMode" />
+            <span>📚 Разрешить режим тренировки</span>
+          </label>
+          
+          <label class="checkbox-item">
+            <input type="checkbox" v-model="form.showHints" />
+            <span>💡 Показывать подсказки</span>
+          </label>
+          
+          <label class="checkbox-item">
+            <input type="checkbox" v-model="form.showExplanations" />
+            <span>📖 Показывать объяснения после ответа</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           ШАГ 4: ВОПРОСЫ
+           ========================================== -->
+      <section class="form-section questions-section">
         <div class="section-header">
-          <h2>Вопросы</h2>
-          <span class="question-count">{{ form.questions.length }} вопросов</span>
+          <h2>4️⃣ Вопросы</h2>
+          <button type="button" @click="addQuestion" class="btn btn-outline btn-sm">
+            ➕ Добавить вопрос
+          </button>
         </div>
 
-        <div class="questions-list">
-          <div
-            v-for="(question, qIndex) in form.questions"
-            :key="qIndex"
-            class="question-card"
+        <!-- Список вопросов -->
+        <div v-if="form.questions.length === 0" class="no-questions">
+          <p>📝 Пока нет вопросов. Добавьте первый!</p>
+        </div>
+
+        <div v-else class="questions-list">
+          <div 
+            v-for="(question, qIndex) in form.questions" 
+            :key="qIndex" 
+            class="question-item"
           >
+            <!-- Заголовок вопроса -->
             <div class="question-header">
               <span class="question-number">Вопрос {{ qIndex + 1 }}</span>
-              <button
-                type="button"
-                class="btn-icon delete"
-                @click="removeQuestion(qIndex)"
-                :disabled="form.questions.length === 1"
+              <button 
+                type="button" 
+                @click="removeQuestion(qIndex)" 
+                class="btn-icon danger"
               >
-                ×
+                🗑️
               </button>
             </div>
 
+            <!-- Текст вопроса -->
             <div class="form-group">
               <label>Текст вопроса *</label>
               <textarea
                 v-model="question.text"
-                placeholder="Введите вопрос..."
+                placeholder="Введите текст вопроса..."
                 rows="2"
                 required
               ></textarea>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label>Тип вопроса</label>
-                <select v-model="question.type" @change="onQuestionTypeChange(qIndex)">
-                  <option value="single">Один ответ</option>
-                  <option value="multiple">Несколько ответов</option>
-                  <option value="text">Текстовый ответ</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Баллы</label>
-                <input
-                  v-model.number="question.points"
-                  type="number"
-                  min="1"
-                  required
-                />
-              </div>
+            <!-- Тип вопроса -->
+            <div class="form-group">
+              <label>Тип вопроса</label>
+              <select v-model="question.type">
+                <option value="single">Один правильный ответ</option>
+                <option value="multiple">Несколько правильных ответов</option>
+                <option value="text">Текстовый ответ</option>
+              </select>
             </div>
 
-            <!-- Варианты ответов -->
-            <div v-if="question.type !== 'text'" class="options-section">
+            <!-- Варианты ответов (для single/multiple) -->
+            <div 
+              v-if="question.type === 'single' || question.type === 'multiple'" 
+              class="options-editor"
+            >
               <label>Варианты ответов</label>
-
-              <div
-                v-for="(option, oIndex) in question.options"
-                :key="oIndex"
+              
+              <div 
+                v-for="(option, oIndex) in question.options" 
+                :key="oIndex" 
                 class="option-row"
               >
                 <input
                   :type="question.type === 'single' ? 'radio' : 'checkbox'"
-                  :name="`correct-${qIndex}`"
-                  v-model="option.isCorrect"
-                  :value="true"
-                  @change="question.type === 'single' && setCorrectOption(qIndex, oIndex)"
-                  class="option-check"
+                  :checked="option.isCorrect"
+                  @change="toggleCorrect(qIndex, oIndex)"
+                  :name="`q${qIndex}-correct`"
                 />
                 <input
                   v-model="option.text"
                   type="text"
-                  placeholder="Вариант ответа..."
+                  placeholder="Текст варианта..."
                   class="option-input"
-                  required
                 />
-                <button
-                  type="button"
-                  class="btn-icon small"
+                <button 
+                  type="button" 
                   @click="removeOption(qIndex, oIndex)"
+                  class="btn-icon small"
                   :disabled="question.options.length <= 2"
                 >
-                  ×
+                  ✕
                 </button>
               </div>
 
-              <button
-                type="button"
-                class="btn btn-outline btn-sm"
-                @click="addOption(qIndex)"
+              <button 
+                type="button" 
+                @click="addOption(qIndex)" 
+                class="btn btn-text"
               >
-                + Добавить вариант
+                ➕ Добавить вариант
               </button>
             </div>
 
-            <div v-else class="text-answer-note">
-              <p>Текстовый ответ будет проверяться вручную</p>
+            <!-- Правильный ответ (для text) -->
+            <div v-else-if="question.type === 'text'" class="form-group">
+              <label>Правильный ответ</label>
+              <input
+                v-model="question.correctAnswer"
+                type="text"
+                placeholder="Введите правильный ответ..."
+              />
             </div>
 
-            <!-- Дополнительные поля для экзаменов -->
-            <div v-if="isExam" class="question-extras">
-              <div class="form-group">
-                <label>Подсказка (опционально)</label>
-                <input
-                  v-model="question.hint"
-                  type="text"
-                  placeholder="Подсказка для режима тренировки..."
-                />
-              </div>
-              <div class="form-group">
-                <label>Объяснение (опционально)</label>
-                <input
-                  v-model="question.explanation"
-                  type="text"
-                  placeholder="Объяснение правильного ответа..."
-                />
-              </div>
+            <!-- Подсказка (опционально) -->
+            <div class="form-group">
+              <label>💡 Подсказка (необязательно)</label>
+              <input
+                v-model="question.hint"
+                type="text"
+                placeholder="Подсказка для студента..."
+              />
             </div>
           </div>
         </div>
-
-        <button type="button" class="btn btn-outline add-question-btn" @click="addQuestion">
-          + Добавить вопрос
-        </button>
       </section>
 
-      <!-- Действия -->
+      <!-- ==========================================
+           КНОПКИ ДЕЙСТВИЙ
+           ========================================== -->
       <div class="form-actions">
-        <button type="button" class="btn btn-outline" @click="typeSelected = false">
-          Изменить тип
-        </button>
         <router-link to="/dashboard" class="btn btn-outline">
           Отмена
         </router-link>
-        <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-          {{ isSubmitting ? 'Сохранение...' : `Создать ${isExam ? 'экзамен' : 'тест'}` }}
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+          :disabled="!canSubmit || isSubmitting"
+        >
+          {{ isSubmitting ? '⏳ Создание...' : '✓ Создать ' + (form.type === 'exam' ? 'экзамен' : 'тест') }}
         </button>
       </div>
+      
     </form>
+    
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
+/**
+ * ==========================================
+ * ЛОГИКА СОЗДАНИЯ ТЕСТА
+ * ==========================================
+ */
+
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTestsStore } from '@/stores/tests'
-import type { QuestionType, TestVisibility, Question, AnswerOption, TestType } from '@/types'
+import type { TestType } from '@/types'
+
+// ==========================================
+// МАРШРУТИЗАЦИЯ И ХРАНИЛИЩА
+// ==========================================
 
 const router = useRouter()
 const testsStore = useTestsStore()
 
-const typeSelected = ref(false)
-const selectedType = ref<TestType>('test')
+// ==========================================
+// ИНТЕРФЕЙСЫ ФОРМЫ
+// ==========================================
+
+/** Вариант ответа в форме */
+interface FormOption {
+  text: string
+  isCorrect: boolean
+}
+
+/** Вопрос в форме */
+interface FormQuestion {
+  text: string
+  type: 'single' | 'multiple' | 'text'
+  options: FormOption[]
+  correctAnswer: string
+  hint: string
+}
+
+// ==========================================
+// СОСТОЯНИЕ ФОРМЫ
+// ==========================================
+
+/** Флаг отправки */
 const isSubmitting = ref(false)
 
-const isExam = computed(() => selectedType.value === 'exam')
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36)
-}
-
-function createOption(text = ''): AnswerOption {
-  return { id: generateId(), text, isCorrect: false }
-}
-
-function createQuestion(): Question {
-  return {
-    id: generateId(),
-    text: '',
-    type: 'single',
-    points: 10,
-    options: [createOption(), createOption()],
-    hint: '',
-    explanation: ''
-  }
-}
-
+/** Данные формы */
 const form = reactive({
+  // Тип
+  type: 'test' as TestType,
+  
+  // Основная информация
   title: '',
   description: '',
-  visibility: 'public' as TestVisibility,
-  timeLimit: null as number | null,
-  questions: [createQuestion()] as Question[],
+  isPublic: true,
+  
   // Настройки экзамена
-  strictMode: true,
-  allowTrainingMode: true,
+  timeLimit: null as number | null,
+  passingScore: 60,
+  maxAttempts: 0,
+  strictMode: false,
   shuffleQuestions: false,
   shuffleOptions: false,
-  showHints: true,
-  showExplanations: true,
-  passingScore: 60,
-  maxAttempts: null as number | null
+  
+  // Настройки теста
+  allowTrainingMode: true,
+  showHints: false,
+  showExplanations: false,
+  
+  // Вопросы
+  questions: [] as FormQuestion[]
 })
 
-function selectType(type: TestType) {
-  selectedType.value = type
-  typeSelected.value = true
+// ==========================================
+// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
+// ==========================================
+
+/** Можно ли отправить форму */
+const canSubmit = computed(() => {
+  // Проверяем обязательные поля
+  if (!form.title.trim()) return false
+  if (form.questions.length === 0) return false
   
-  // Сбросить настройки для теста
-  if (type === 'test') {
-    form.timeLimit = null
-    form.strictMode = false
-    form.allowTrainingMode = false
+  // Проверяем каждый вопрос
+  for (const q of form.questions) {
+    if (!q.text.trim()) return false
+    
+    if (q.type === 'single' || q.type === 'multiple') {
+      // Должен быть хотя бы один правильный ответ
+      const hasCorrect = q.options.some(opt => opt.isCorrect)
+      if (!hasCorrect) return false
+      
+      // Все варианты должны иметь текст
+      const allFilled = q.options.every(opt => opt.text.trim())
+      if (!allFilled) return false
+    } else if (q.type === 'text') {
+      // Должен быть правильный ответ
+      if (!q.correctAnswer.trim()) return false
+    }
   }
+  
+  return true
+})
+
+// ==========================================
+// МЕТОДЫ: РАБОТА С ВОПРОСАМИ
+// ==========================================
+
+/**
+ * Добавляет новый вопрос
+ */
+function addQuestion(): void {
+  form.questions.push({
+    text: '',
+    type: 'single',
+    options: [
+      { text: '', isCorrect: false },
+      { text: '', isCorrect: false }
+    ],
+    correctAnswer: '',
+    hint: ''
+  })
 }
 
-function addQuestion() {
-  form.questions.push(createQuestion())
+/**
+ * Удаляет вопрос
+ */
+function removeQuestion(index: number): void {
+  form.questions.splice(index, 1)
 }
 
-function removeQuestion(index: number) {
-  if (form.questions.length > 1) {
-    form.questions.splice(index, 1)
-  }
+/**
+ * Добавляет вариант ответа
+ */
+function addOption(questionIndex: number): void {
+  form.questions[questionIndex].options.push({
+    text: '',
+    isCorrect: false
+  })
 }
 
-function onQuestionTypeChange(qIndex: number) {
-  const question = form.questions[qIndex]
-  if (!question) return
-  if (question.type === 'text') {
-    question.options = []
-  } else if (question.options.length < 2) {
-    question.options = [createOption(), createOption()]
-  }
+/**
+ * Удаляет вариант ответа
+ */
+function removeOption(questionIndex: number, optionIndex: number): void {
+  form.questions[questionIndex].options.splice(optionIndex, 1)
+}
+
+/**
+ * Переключает правильность ответа
+ */
+function toggleCorrect(questionIndex: number, optionIndex: number): void {
+  const question = form.questions[questionIndex]
+  
   if (question.type === 'single') {
-    question.options.forEach(o => o.isCorrect = false)
-  }
-}
-
-function addOption(qIndex: number) {
-  form.questions[qIndex]?.options.push(createOption())
-}
-
-function removeOption(qIndex: number, oIndex: number) {
-  const question = form.questions[qIndex]
-  if (question && question.options.length > 2) {
-    question.options.splice(oIndex, 1)
-  }
-}
-
-function setCorrectOption(qIndex: number, oIndex: number) {
-  const question = form.questions[qIndex]
-  if (question) {
-    question.options.forEach((opt, i) => {
-      opt.isCorrect = i === oIndex
+    // Для одного ответа - сбрасываем все и отмечаем выбранный
+    question.options.forEach((opt, idx) => {
+      opt.isCorrect = idx === optionIndex
     })
+  } else {
+    // Для множественного - переключаем
+    question.options[optionIndex].isCorrect = !question.options[optionIndex].isCorrect
   }
 }
 
-async function handleSubmit() {
-  // Validation
-  for (const question of form.questions) {
-    if (question.type !== 'text') {
-      const hasCorrect = question.options.some(o => o.isCorrect)
-      if (!hasCorrect) {
-        alert('Каждый вопрос должен иметь хотя бы один правильный ответ!')
-        return
-      }
-    }
-  }
+// ==========================================
+// МЕТОДЫ: ОТПРАВКА ФОРМЫ
+// ==========================================
 
+/**
+ * Отправляет форму на сервер
+ */
+async function handleSubmit(): Promise<void> {
+  if (!canSubmit.value || isSubmitting.value) return
+  
   isSubmitting.value = true
-
+  
   try {
+    // Формируем данные для отправки
     const testData = {
-      type: selectedType.value,
-      title: form.title,
-      description: form.description,
-      visibility: form.visibility,
-      questions: form.questions,
-      // Для экзаменов добавляем все настройки
-      ...(isExam.value && {
-        timeLimit: form.timeLimit || null,
-        strictMode: form.strictMode,
-        allowTrainingMode: form.allowTrainingMode,
-        shuffleQuestions: form.shuffleQuestions,
-        shuffleOptions: form.shuffleOptions,
-        showHints: form.showHints,
-        showExplanations: form.showExplanations,
-        passingScore: form.passingScore || 60,
-        maxAttempts: form.maxAttempts || null
-      })
+      type: form.type,
+      title: form.title.trim(),
+      description: form.description.trim(),
+      isPublic: form.isPublic,
+      
+      // Настройки
+      timeLimit: form.timeLimit ?? null,
+      passingScore: form.passingScore,
+      maxAttempts: form.maxAttempts,
+      strictMode: form.strictMode,
+      shuffleQuestions: form.shuffleQuestions,
+      shuffleOptions: form.shuffleOptions,
+      allowTrainingMode: form.allowTrainingMode,
+      showHints: form.showHints,
+      showExplanations: form.showExplanations,
+      
+      // Вопросы
+      questions: form.questions.map(q => ({
+        text: q.text.trim(),
+        type: q.type,
+        options: q.type !== 'text' 
+          ? q.options.map(opt => ({
+              text: opt.text.trim(),
+              isCorrect: opt.isCorrect
+            }))
+          : [],
+        correctAnswer: q.type === 'text' ? q.correctAnswer.trim() : '',
+        hint: q.hint.trim() || null
+      }))
     }
-
-    const test = await testsStore.createTest(testData)
-
-    if (test) {
-      router.push(`/tests/${test.id}`)
-    }
+    
+    // Создаём тест
+    await testsStore.createTest(testData)
+    
+    // Переходим на панель управления
+    router.push('/dashboard')
+    
+  } catch (error) {
+    console.error('Ошибка создания теста:', error)
+    alert('Ошибка при создании теста. Попробуйте ещё раз.')
   } finally {
     isSubmitting.value = false
   }
@@ -467,11 +560,19 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
+/* ==========================================
+   СТИЛИ СОЗДАНИЯ ТЕСТА
+   ========================================== */
+
 .create-test-page {
   padding: 2rem;
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
 }
+
+/* ==========================================
+   ЗАГОЛОВОК
+   ========================================== */
 
 .page-header {
   margin-bottom: 2rem;
@@ -482,7 +583,7 @@ async function handleSubmit() {
   color: var(--color-text-muted);
   text-decoration: none;
   margin-bottom: 1rem;
-  font-size: 0.9rem;
+  transition: color 0.2s;
 }
 
 .back-link:hover {
@@ -490,186 +591,86 @@ async function handleSubmit() {
 }
 
 .page-header h1 {
-  font-size: 2rem;
+  font-size: 1.8rem;
 }
 
-/* Type Selection */
-.type-selection {
-  text-align: center;
-}
-
-.type-selection h2 {
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  color: var(--color-text);
-}
-
-.type-cards {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.type-card {
-  background: var(--color-surface);
-  border: 2px solid var(--color-border);
-  border-radius: 20px;
-  padding: 2rem;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.type-card:hover {
-  border-color: var(--color-primary);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-}
-
-.type-icon {
-  width: 56px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.test-icon {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
-  color: #4ade80;
-}
-
-.exam-icon {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2));
-  color: #a78bfa;
-}
-
-.type-card h3 {
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-  color: var(--color-text);
-}
-
-.type-card > p {
-  color: var(--color-text-muted);
-  margin-bottom: 1rem;
-}
-
-.type-features {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.type-features li {
-  padding: 0.4rem 0;
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.type-features li:last-child {
-  border-bottom: none;
-}
-
-/* Form */
-.test-form {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
+/* ==========================================
+   СЕКЦИИ ФОРМЫ
+   ========================================== */
 
 .form-section {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-section h2 {
-  font-size: 1.25rem;
-  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
+/* ==========================================
+   ВЫБОР ТИПА
+   ========================================== */
 
-.section-header h2 {
-  margin-bottom: 0;
-}
-
-.question-count {
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-  background: var(--color-background);
-  padding: 0.35rem 0.75rem;
-  border-radius: 8px;
-}
-
-/* Exam settings */
-.exam-settings {
-  border-color: rgba(139, 92, 246, 0.3);
-}
-
-.settings-grid {
+.type-selector {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-  margin-bottom: 1.5rem;
 }
 
-.setting-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: var(--color-background);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.setting-item:hover {
-  background: var(--accent-glow);
-}
-
-.setting-item input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  margin-top: 0.1rem;
-  accent-color: var(--color-primary);
+.type-option {
   cursor: pointer;
 }
 
-.setting-info {
+.type-option input {
+  display: none;
+}
+
+.type-card {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--color-background);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  transition: all 0.2s;
 }
 
-.setting-title {
-  font-weight: 500;
-  color: var(--color-text);
+.type-option input:checked + .type-card {
+  border-color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.1);
 }
 
-.setting-desc {
-  font-size: 0.8rem;
+.type-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.type-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.type-desc {
+  font-size: 0.85rem;
   color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
-/* Form elements */
+/* ==========================================
+   ПОЛЯ ФОРМЫ
+   ========================================== */
+
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .form-group label {
@@ -680,7 +681,8 @@ async function handleSubmit() {
   color: var(--color-text);
 }
 
-.form-group input,
+.form-group input[type="text"],
+.form-group input[type="number"],
 .form-group textarea,
 .form-group select {
   width: 100%;
@@ -700,24 +702,98 @@ async function handleSubmit() {
   border-color: var(--color-primary);
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+.form-group textarea {
+  resize: vertical;
+  font-family: inherit;
 }
 
-/* Questions */
+/* Чекбоксы */
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* ==========================================
+   НАСТРОЙКИ
+   ========================================== */
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.settings-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-background);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.checkbox-item:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.checkbox-item input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* ==========================================
+   ВОПРОСЫ
+   ========================================== */
+
+.questions-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.questions-section .section-header h2 {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.no-questions {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-muted);
+}
+
 .questions-list {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
 }
 
-.question-card {
+/* Карточка вопроса */
+.question-item {
   background: var(--color-background);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 1.25rem;
 }
 
@@ -733,58 +809,35 @@ async function handleSubmit() {
   color: var(--color-primary);
 }
 
-.btn-icon {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  cursor: pointer;
-  padding: 0.25rem;
-  opacity: 0.6;
-  transition: opacity 0.2s;
+/* Редактор вариантов */
+.options-editor {
+  margin-bottom: 1rem;
 }
 
-.btn-icon:hover:not(:disabled) {
-  opacity: 1;
-}
-
-.btn-icon:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.btn-icon.small {
-  font-size: 1rem;
-}
-
-.options-section {
-  margin-top: 1rem;
-}
-
-.options-section > label {
+.options-editor > label {
   display: block;
   font-size: 0.9rem;
   font-weight: 500;
   margin-bottom: 0.75rem;
-  color: var(--color-text);
 }
 
 .option-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
-.option-check {
-  width: 20px;
-  height: 20px;
+.option-row input[type="radio"],
+.option-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
   cursor: pointer;
-  accent-color: var(--color-primary);
 }
 
 .option-input {
   flex: 1;
-  padding: 0.625rem 0.875rem;
+  padding: 0.6rem 0.75rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -797,56 +850,81 @@ async function handleSubmit() {
   border-color: var(--color-primary);
 }
 
-.text-answer-note {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: var(--color-surface);
-  border-radius: 10px;
-  color: var(--color-text-muted);
+/* ==========================================
+   КНОПКИ
+   ========================================== */
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-icon:hover {
+  background: var(--color-border);
+}
+
+.btn-icon.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.btn-icon.small {
+  width: 28px;
+  height: 28px;
   font-size: 0.9rem;
 }
 
-.question-extras {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
+.btn-icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
-.question-extras .form-group {
-  margin-bottom: 0.75rem;
-}
-
-.question-extras .form-group:last-child {
-  margin-bottom: 0;
-}
-
-.question-extras input {
+.btn-text {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
   font-size: 0.9rem;
-  padding: 0.6rem 0.875rem;
+  padding: 0.5rem;
 }
 
-.add-question-btn {
-  width: 100%;
+.btn-text:hover {
+  text-decoration: underline;
 }
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* ==========================================
+   ДЕЙСТВИЯ ФОРМЫ
+   ========================================== */
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  padding-top: 1rem;
 }
 
-@media (max-width: 768px) {
-  .type-cards {
+/* ==========================================
+   АДАПТИВНОСТЬ
+   ========================================== */
+
+@media (max-width: 600px) {
+  .type-selector {
     grid-template-columns: 1fr;
   }
 
   .settings-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-  .form-row {
     grid-template-columns: 1fr;
   }
 
@@ -856,7 +934,6 @@ async function handleSubmit() {
 
   .form-actions .btn {
     width: 100%;
-    text-align: center;
   }
 }
 </style>

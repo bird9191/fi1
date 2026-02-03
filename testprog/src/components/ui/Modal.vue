@@ -1,0 +1,186 @@
+<!--
+  ==========================================
+  КОМПОНЕНТ МОДАЛЬНОГО ОКНА (Modal.vue)
+  ==========================================
+  
+  Всплывающее окно для диалогов
+-->
+
+<template>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="modelValue" class="modal-overlay" @click.self="close">
+        <div class="modal" :class="`modal-${size}`">
+          
+          <!-- Заголовок -->
+          <div class="modal-header">
+            <h2 class="modal-title">{{ title }}</h2>
+            <button class="modal-close" @click="close">✕</button>
+          </div>
+          
+          <!-- Контент -->
+          <div class="modal-body">
+            <slot />
+          </div>
+          
+          <!-- Футер (если есть) -->
+          <div v-if="$slots.footer" class="modal-footer">
+            <slot name="footer" />
+          </div>
+          
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+/**
+ * Пропсы компонента
+ */
+interface Props {
+  /** Видимость (v-model) */
+  modelValue: boolean
+  /** Заголовок */
+  title: string
+  /** Размер */
+  size?: 'sm' | 'md' | 'lg'
+}
+
+withDefaults(defineProps<Props>(), {
+  size: 'md'
+})
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+}>()
+
+/** Закрывает модальное окно */
+function close() {
+  emit('update:modelValue', false)
+}
+</script>
+
+<style scoped>
+/* ==========================================
+   ОВЕРЛЕЙ
+   ========================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  z-index: 1000;
+}
+
+/* ==========================================
+   МОДАЛЬНОЕ ОКНО
+   ========================================== */
+
+.modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Размеры */
+.modal-sm { max-width: 400px; }
+.modal-md { max-width: 560px; }
+.modal-lg { max-width: 720px; }
+
+/* ==========================================
+   ЗАГОЛОВОК
+   ========================================== */
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background 0.2s;
+}
+
+.modal-close:hover {
+  background: var(--color-background);
+}
+
+/* ==========================================
+   КОНТЕНТ
+   ========================================== */
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+/* ==========================================
+   ФУТЕР
+   ========================================== */
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* ==========================================
+   АНИМАЦИЯ
+   ========================================== */
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-enter-active .modal,
+.modal-leave-active .modal {
+  transition: transform 0.2s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal,
+.modal-leave-to .modal {
+  transform: scale(0.95);
+}
+</style>
+
+
+
+

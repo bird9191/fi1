@@ -1,14 +1,36 @@
+<!--
+  ==========================================
+  ПАНЕЛЬ УПРАВЛЕНИЯ (DashboardView.vue)
+  ==========================================
+  
+  Главная страница авторизованного пользователя.
+  
+  ДЛЯ УЧИТЕЛЕЙ:
+  - Список созданных тестов
+  - Статистика по тестам
+  
+  ДЛЯ СТУДЕНТОВ:
+  - Доступные тесты
+  - История результатов
+-->
+
 <template>
   <div class="dashboard-page">
-    <!-- Боковая панель слева -->
+    
+    <!-- ==========================================
+         БОКОВАЯ ПАНЕЛЬ (СЛЕВА)
+         ========================================== -->
     <aside class="sidebar">
+      
+      <!-- Информация о пользователе -->
       <div class="sidebar-header">
         <h2>{{ authStore.currentUser?.name }}</h2>
         <span class="role-badge" :class="authStore.currentUser?.role">
-          {{ authStore.isTeacher ? 'Учитель' : authStore.isAdmin ? 'Админ' : 'Студент' }}
+          {{ getRoleName }}
         </span>
       </div>
 
+      <!-- Навигация по вкладкам -->
       <nav class="sidebar-nav">
         <button 
           v-for="tab in availableTabs" 
@@ -22,33 +44,47 @@
 
       <!-- Быстрые действия -->
       <div class="sidebar-actions">
-        <router-link v-if="authStore.isTeacher" to="/tests/create" class="action-btn primary">
-          + Создать тест
+        <router-link 
+          v-if="authStore.isTeacher" 
+          to="/tests/create" 
+          class="action-btn primary"
+        >
+          ➕ Создать тест
         </router-link>
         <router-link to="/tests" class="action-btn">
-          Каталог тестов
+          📚 Каталог тестов
         </router-link>
         <router-link to="/profile" class="action-btn">
-          Мой профиль
+          👤 Мой профиль
         </router-link>
       </div>
+      
     </aside>
 
-    <!-- Основной контент -->
+    <!-- ==========================================
+         ОСНОВНОЙ КОНТЕНТ
+         ========================================== -->
     <main class="main-content">
-      <!-- Мои тесты (учитель) -->
+      
+      <!-- ========================================
+           ВКЛАДКА: МОИ ТЕСТЫ (для учителя)
+           ======================================== -->
       <div v-if="activeTab === 'my-tests'" class="content-section">
+        
+        <!-- Заголовок секции -->
         <div class="section-header">
           <h1>Мои тесты</h1>
           <router-link to="/tests/create" class="btn btn-primary">
-            + Создать
+            ➕ Создать
           </router-link>
         </div>
 
+        <!-- Загрузка -->
         <div v-if="testsStore.isLoading" class="loading">
           <div class="spinner"></div>
         </div>
 
+        <!-- Пустой список -->
         <div v-else-if="testsStore.myTests.length === 0" class="empty-state">
           <h3>У вас пока нет тестов</h3>
           <p>Создайте свой первый тест</p>
@@ -57,22 +93,31 @@
           </router-link>
         </div>
 
+        <!-- Список тестов -->
         <div v-else class="tests-grid">
           <div v-for="test in testsStore.myTests" :key="test.id" class="test-card">
+            
+            <!-- Бейджи -->
             <div class="test-card-header">
               <span class="type-badge" :class="test.type || 'test'">
-                {{ test.type === 'exam' ? 'Экзамен' : 'Тест' }}
+                {{ test.type === 'exam' ? '📋 Экзамен' : '✏️ Тест' }}
               </span>
               <span class="visibility-badge" :class="test.visibility">
-                {{ test.visibility === 'public' ? 'Публичный' : 'Приватный' }}
+                {{ test.visibility === 'public' ? '🌐 Публичный' : '🔒 Приватный' }}
               </span>
             </div>
+            
+            <!-- Информация о тесте -->
             <h3>{{ test.title }}</h3>
             <p class="test-description">{{ test.description }}</p>
+            
+            <!-- Мета-информация -->
             <div class="test-meta">
               <span>{{ test.questions.length }} вопросов</span>
-              <span v-if="test.timeLimit">{{ test.timeLimit }} мин</span>
+              <span v-if="test.timeLimit">⏱ {{ test.timeLimit }} мин</span>
             </div>
+            
+            <!-- Действия -->
             <div class="test-actions">
               <router-link :to="`/tests/${test.id}`" class="btn btn-outline btn-sm">
                 Открыть
@@ -81,12 +126,16 @@
                 Редактировать
               </router-link>
             </div>
+            
           </div>
         </div>
       </div>
 
-      <!-- Доступные тесты (студент) -->
+      <!-- ========================================
+           ВКЛАДКА: ДОСТУПНЫЕ ТЕСТЫ (для студента)
+           ======================================== -->
       <div v-if="activeTab === 'available'" class="content-section">
+        
         <div class="section-header">
           <h1>Доступные тесты</h1>
           <router-link to="/tests" class="btn btn-outline">
@@ -94,39 +143,50 @@
           </router-link>
         </div>
 
+        <!-- Загрузка -->
         <div v-if="testsStore.isLoading" class="loading">
           <div class="spinner"></div>
         </div>
 
+        <!-- Пустой список -->
         <div v-else-if="testsStore.publicTests.length === 0" class="empty-state">
           <h3>Пока нет доступных тестов</h3>
           <p>Когда учителя создадут тесты, они появятся здесь</p>
         </div>
 
+        <!-- Список тестов -->
         <div v-else class="tests-grid">
           <div v-for="test in testsStore.publicTests" :key="test.id" class="test-card">
+            
             <div class="test-card-header">
               <span class="type-badge" :class="test.type || 'test'">
-                {{ test.type === 'exam' ? 'Экзамен' : 'Тест' }}
+                {{ test.type === 'exam' ? '📋 Экзамен' : '✏️ Тест' }}
               </span>
             </div>
+            
             <h3>{{ test.title }}</h3>
             <p class="test-description">{{ test.description }}</p>
+            
             <div class="test-meta">
-              <span>{{ test.authorName }}</span>
+              <span>👤 {{ test.authorName }}</span>
               <span>{{ test.questions.length }} вопросов</span>
             </div>
+            
             <div class="test-actions">
               <router-link :to="`/tests/${test.id}/take`" class="btn btn-primary btn-sm">
-                Пройти
+                ▶️ Пройти
               </router-link>
             </div>
+            
           </div>
         </div>
       </div>
 
-      <!-- Мои результаты -->
+      <!-- ========================================
+           ВКЛАДКА: МОИ РЕЗУЛЬТАТЫ (для студента)
+           ======================================== -->
       <div v-if="activeTab === 'results'" class="content-section">
+        
         <div class="section-header">
           <h1>Мои результаты</h1>
           <router-link to="/results" class="btn btn-outline">
@@ -134,6 +194,7 @@
           </router-link>
         </div>
 
+        <!-- Пустой список -->
         <div v-if="testsStore.userResults.length === 0" class="empty-state">
           <h3>Пока нет результатов</h3>
           <p>Пройдите тест, чтобы увидеть результаты</p>
@@ -142,6 +203,7 @@
           </router-link>
         </div>
 
+        <!-- Список результатов -->
         <div v-else class="results-list">
           <router-link 
             v-for="result in testsStore.userResults" 
@@ -152,7 +214,9 @@
             <div class="result-info">
               <h4>{{ result.testTitle }}</h4>
               <div class="result-meta">
-                <span class="result-mode">{{ result.mode === 'training' ? 'Тренировка' : 'Экзамен' }}</span>
+                <span class="result-mode">
+                  {{ result.mode === 'training' ? '🎯 Тренировка' : '📋 Экзамен' }}
+                </span>
                 <span class="result-date">{{ formatDate(result.completedAt) }}</span>
               </div>
             </div>
@@ -163,12 +227,16 @@
         </div>
       </div>
 
-      <!-- Статистика (учитель) -->
+      <!-- ========================================
+           ВКЛАДКА: СТАТИСТИКА (для учителя)
+           ======================================== -->
       <div v-if="activeTab === 'stats'" class="content-section">
+        
         <div class="section-header">
-          <h1>Статистика</h1>
+          <h1>📊 Статистика</h1>
         </div>
 
+        <!-- Карточки статистики -->
         <div class="stats-grid">
           <div class="stat-card">
             <span class="stat-value">{{ testsStore.myTests.length }}</span>
@@ -188,47 +256,107 @@
           </div>
         </div>
       </div>
+      
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * ==========================================
+ * ЛОГИКА ПАНЕЛИ УПРАВЛЕНИЯ
+ * ==========================================
+ */
+
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTestsStore } from '@/stores/tests'
 
+// ==========================================
+// ХРАНИЛИЩА
+// ==========================================
+
 const authStore = useAuthStore()
 const testsStore = useTestsStore()
 
+// ==========================================
+// СОСТОЯНИЕ
+// ==========================================
+
+/** Активная вкладка */
 const activeTab = ref('')
 
+// ==========================================
+// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
+// ==========================================
+
+/** Название роли на русском */
+const getRoleName = computed(() => {
+  if (authStore.isAdmin) return 'Админ'
+  if (authStore.isTeacher) return 'Учитель'
+  return 'Студент'
+})
+
+/** Доступные вкладки в зависимости от роли */
 const availableTabs = computed(() => {
   if (authStore.isTeacher) {
     return [
-      { id: 'my-tests', label: 'Мои тесты' },
-      { id: 'stats', label: 'Статистика' }
+      { id: 'my-tests', label: '📝 Мои тесты' },
+      { id: 'stats', label: '📊 Статистика' }
     ]
   }
   return [
-    { id: 'available', label: 'Доступные тесты' },
-    { id: 'results', label: 'Мои результаты' }
+    { id: 'available', label: '📚 Доступные тесты' },
+    { id: 'results', label: '📋 Мои результаты' }
   ]
 })
 
+/** Количество публичных тестов */
 const publicTestsCount = computed(() => 
   testsStore.myTests.filter(t => t.visibility === 'public').length
 )
 
+/** Количество экзаменов */
 const examCount = computed(() => 
   testsStore.myTests.filter(t => t.type === 'exam').length
 )
 
+/** Общее количество вопросов */
 const totalQuestions = computed(() => 
   testsStore.myTests.reduce((sum, t) => sum + t.questions.length, 0)
 )
 
+// ==========================================
+// МЕТОДЫ
+// ==========================================
+
+/**
+ * Форматирование даты
+ */
+function formatDate(date: Date): string {
+  return new Date(date).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  })
+}
+
+/**
+ * Получить CSS-класс для оценки
+ */
+function getScoreClass(percentage: number): string {
+  if (percentage >= 80) return 'excellent'
+  if (percentage >= 60) return 'good'
+  if (percentage >= 40) return 'average'
+  return 'poor'
+}
+
+// ==========================================
+// ЖИЗНЕННЫЙ ЦИКЛ
+// ==========================================
+
 onMounted(async () => {
-  // Установить первую вкладку
+  // Установить первую вкладку по умолчанию
   activeTab.value = authStore.isTeacher ? 'my-tests' : 'available'
   
   // Загружаем данные
@@ -242,30 +370,22 @@ onMounted(async () => {
     await testsStore.loadUserResults()
   }
 })
-
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  })
-}
-
-function getScoreClass(percentage: number): string {
-  if (percentage >= 80) return 'excellent'
-  if (percentage >= 60) return 'good'
-  if (percentage >= 40) return 'average'
-  return 'poor'
-}
 </script>
 
 <style scoped>
+/* ==========================================
+   LAYOUT СТРАНИЦЫ
+   ========================================== */
+
 .dashboard-page {
   display: flex;
   min-height: calc(100vh - 60px);
 }
 
-/* Sidebar */
+/* ==========================================
+   БОКОВАЯ ПАНЕЛЬ
+   ========================================== */
+
 .sidebar {
   width: 280px;
   background: var(--color-surface);
@@ -275,6 +395,7 @@ function getScoreClass(percentage: number): string {
   padding: 1.5rem;
 }
 
+/* Заголовок сайдбара */
 .sidebar-header {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
@@ -286,6 +407,7 @@ function getScoreClass(percentage: number): string {
   margin-bottom: 0.5rem;
 }
 
+/* Бейдж роли */
 .role-badge {
   display: inline-block;
   padding: 0.3rem 0.75rem;
@@ -308,6 +430,10 @@ function getScoreClass(percentage: number): string {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
 }
+
+/* ==========================================
+   НАВИГАЦИЯ ПО ВКЛАДКАМ
+   ========================================== */
 
 .sidebar-nav {
   display: flex;
@@ -339,6 +465,10 @@ function getScoreClass(percentage: number): string {
   color: var(--color-primary);
   font-weight: 500;
 }
+
+/* ==========================================
+   БЫСТРЫЕ ДЕЙСТВИЯ
+   ========================================== */
 
 .sidebar-actions {
   margin-top: auto;
@@ -375,7 +505,10 @@ function getScoreClass(percentage: number): string {
   border-color: var(--color-accent);
 }
 
-/* Main Content */
+/* ==========================================
+   ОСНОВНОЙ КОНТЕНТ
+   ========================================== */
+
 .main-content {
   flex: 1;
   padding: 2rem;
@@ -386,6 +519,7 @@ function getScoreClass(percentage: number): string {
   max-width: 1000px;
 }
 
+/* Заголовок секции */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -397,7 +531,10 @@ function getScoreClass(percentage: number): string {
   font-size: 1.75rem;
 }
 
-/* Loading */
+/* ==========================================
+   ЗАГРУЗКА И ПУСТОЕ СОСТОЯНИЕ
+   ========================================== */
+
 .loading {
   display: flex;
   justify-content: center;
@@ -417,7 +554,6 @@ function getScoreClass(percentage: number): string {
   to { transform: rotate(360deg); }
 }
 
-/* Empty State */
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
@@ -435,13 +571,17 @@ function getScoreClass(percentage: number): string {
   margin-bottom: 1.5rem;
 }
 
-/* Tests Grid */
+/* ==========================================
+   СЕТКА ТЕСТОВ
+   ========================================== */
+
 .tests-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.25rem;
 }
 
+/* Карточка теста */
 .test-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -455,12 +595,14 @@ function getScoreClass(percentage: number): string {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
+/* Заголовок карточки */
 .test-card-header {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
 }
 
+/* Бейдж типа */
 .type-badge {
   font-size: 0.75rem;
   padding: 0.2rem 0.6rem;
@@ -478,6 +620,7 @@ function getScoreClass(percentage: number): string {
   color: #a78bfa;
 }
 
+/* Бейдж видимости */
 .visibility-badge {
   font-size: 0.75rem;
   padding: 0.2rem 0.6rem;
@@ -494,6 +637,7 @@ function getScoreClass(percentage: number): string {
   color: #fbbf24;
 }
 
+/* Информация о тесте */
 .test-card h3 {
   font-size: 1.05rem;
   margin-bottom: 0.5rem;
@@ -522,7 +666,10 @@ function getScoreClass(percentage: number): string {
   gap: 0.5rem;
 }
 
-/* Results */
+/* ==========================================
+   СПИСОК РЕЗУЛЬТАТОВ
+   ========================================== */
+
 .results-list {
   display: flex;
   flex-direction: column;
@@ -566,6 +713,7 @@ function getScoreClass(percentage: number): string {
   border-radius: 4px;
 }
 
+/* Оценка */
 .result-score {
   font-size: 1.25rem;
   font-weight: 700;
@@ -593,7 +741,10 @@ function getScoreClass(percentage: number): string {
   color: #f87171;
 }
 
-/* Stats */
+/* ==========================================
+   СТАТИСТИКА
+   ========================================== */
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -621,7 +772,10 @@ function getScoreClass(percentage: number): string {
   color: var(--color-text-muted);
 }
 
-/* Responsive */
+/* ==========================================
+   АДАПТИВНОСТЬ
+   ========================================== */
+
 @media (max-width: 900px) {
   .dashboard-page {
     flex-direction: column;

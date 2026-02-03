@@ -1,116 +1,239 @@
+<!--
+  ==========================================
+  ДЕТАЛИ РЕЗУЛЬТАТА (ResultDetailsView.vue)
+  ==========================================
+  
+  Подробная информация о пройденном тесте:
+  - Общая статистика
+  - Разбор каждого вопроса
+  - Правильные и неправильные ответы
+-->
+
 <template>
   <div class="result-details-page">
+    
+    <!-- ==========================================
+         СОСТОЯНИЕ ЗАГРУЗКИ
+         ========================================== -->
     <div v-if="isLoading" class="loading">
       <div class="spinner"></div>
-      <p>Загрузка результата...</p>
+      <p>Загрузка результатов...</p>
     </div>
 
+    <!-- ==========================================
+         РЕЗУЛЬТАТ НЕ НАЙДЕН
+         ========================================== -->
     <div v-else-if="!result" class="not-found">
-      <h2>Результат не найден</h2>
-      <router-link to="/results" class="btn btn-primary">К результатам</router-link>
+      <h2>😕 Результат не найден</h2>
+      <router-link to="/results" class="btn btn-primary">
+        ← Вернуться к результатам
+      </router-link>
     </div>
 
+    <!-- ==========================================
+         ОСНОВНОЙ КОНТЕНТ
+         ========================================== -->
     <template v-else>
-      <header class="page-header">
-        <router-link to="/results" class="back-link">Назад к результатам</router-link>
-        <h1>{{ result.testTitle }}</h1>
-        <span class="mode-badge">{{ result.mode === 'training' ? 'Тренировка' : 'Экзамен' }}</span>
-      </header>
+      
+      <!-- Кнопка назад -->
+      <router-link to="/results" class="back-link">
+        ← Назад к результатам
+      </router-link>
 
-      <!-- Основной результат -->
-      <div class="result-summary">
-        <div class="score-display" :class="getScoreClass(result.percentage)">
-          <span class="score-value">{{ result.percentage }}%</span>
-          <span class="score-detail">{{ result.score }} из {{ result.maxScore }} баллов</span>
-        </div>
-
-        <div class="result-stats">
-          <div class="stat">
-            <span class="stat-value">{{ formatTime(result.totalTime) }}</span>
-            <span class="stat-label">Время</span>
+      <!-- ==========================================
+           КАРТОЧКА РЕЗУЛЬТАТА
+           ========================================== -->
+      <div class="result-card">
+        <div class="result-header">
+          <div>
+            <span class="type-badge" :class="result.testType || 'test'">
+              {{ result.testType === 'exam' ? '📋 Экзамен' : '✏️ Тест' }}
+            </span>
+            <h1>{{ result.testTitle }}</h1>
+            <p class="date">Пройден {{ formatDate(result.completedAt) }}</p>
           </div>
-          <div class="stat">
-            <span class="stat-value">{{ correctCount }}/{{ result.questionStats?.length || 0 }}</span>
-            <span class="stat-label">Правильных</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">{{ avgTime }}с</span>
-            <span class="stat-label">Среднее время</span>
-          </div>
-        </div>
-
-        <p class="result-date">Пройден: {{ formatDate(result.completedAt) }}</p>
-      </div>
-
-      <!-- Детали по вопросам -->
-      <div v-if="result.questionStats && result.questionStats.length > 0" class="questions-analysis">
-        <h2>Результаты по вопросам</h2>
-
-        <div class="question-list">
-          <div
-            v-for="(stat, index) in result.questionStats"
-            :key="stat.questionId"
-            class="question-item"
-            :class="{ correct: stat.isCorrect, incorrect: !stat.isCorrect }"
-          >
-            <div class="question-header">
-              <span class="question-number">{{ index + 1 }}</span>
-              <span class="question-status">{{ stat.isCorrect ? 'Верно' : 'Неверно' }}</span>
-              <span class="question-time">{{ stat.timeSpent }}с</span>
+          
+          <!-- Круговой прогресс -->
+          <div class="score-circle" :class="getScoreClass(result.score)">
+            <svg viewBox="0 0 36 36" class="circular-chart">
+              <path
+                class="circle-bg"
+                d="M18 2.0845
+                   a 15.9155 15.9155 0 0 1 0 31.831
+                   a 15.9155 15.9155 0 0 1 0 -31.831"
+              />
+              <path
+                class="circle"
+                :stroke-dasharray="`${result.score}, 100`"
+                d="M18 2.0845
+                   a 15.9155 15.9155 0 0 1 0 31.831
+                   a 15.9155 15.9155 0 0 1 0 -31.831"
+              />
+            </svg>
+            <div class="score-text">
+              <span class="score-value">{{ result.score }}%</span>
+              <span class="score-label">{{ result.passed ? 'Сдано' : 'Не сдано' }}</span>
             </div>
-            <p class="question-text">{{ stat.questionText }}</p>
-            <div v-if="stat.category" class="question-category">{{ stat.category }}</div>
+          </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-icon">✓</span>
+            <div>
+              <div class="stat-value">{{ correctCount }}</div>
+              <div class="stat-label">Правильных</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">✗</span>
+            <div>
+              <div class="stat-value">{{ wrongCount }}</div>
+              <div class="stat-label">Неправильных</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">⏱</span>
+            <div>
+              <div class="stat-value">{{ formatTime(result.timeSpent) }}</div>
+              <div class="stat-label">Время</div>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- ==========================================
+           РАЗБОР ВОПРОСОВ
+           ========================================== -->
+      <section class="questions-review">
+        <h2>📝 Разбор вопросов</h2>
+        
+        <div 
+          v-for="(question, index) in result.questions" 
+          :key="index"
+          class="question-card"
+          :class="{ correct: question.isCorrect, wrong: !question.isCorrect }"
+        >
+          <div class="question-header">
+            <span class="question-number">Вопрос {{ index + 1 }}</span>
+            <span class="question-status">
+              {{ question.isCorrect ? '✓ Верно' : '✗ Неверно' }}
+            </span>
+          </div>
+
+          <p class="question-text">{{ question.text }}</p>
+
+          <!-- Ответы -->
+          <div class="answers">
+            <!-- Ваш ответ -->
+            <div class="answer your-answer" :class="{ correct: question.isCorrect }">
+              <span class="answer-label">Ваш ответ:</span>
+              <span class="answer-text">{{ question.userAnswer || '—' }}</span>
+            </div>
+            
+            <!-- Правильный ответ (если неверно) -->
+            <div v-if="!question.isCorrect" class="answer correct-answer">
+              <span class="answer-label">Правильный ответ:</span>
+              <span class="answer-text">{{ question.correctAnswer }}</span>
+            </div>
+          </div>
+
+          <!-- Объяснение -->
+          <div v-if="question.explanation" class="explanation">
+            <span class="explanation-icon">💡</span>
+            <span>{{ question.explanation }}</span>
+          </div>
+        </div>
+      </section>
 
       <!-- Действия -->
-      <div class="result-actions">
-        <router-link to="/results" class="btn btn-outline">К результатам</router-link>
-        <router-link :to="`/tests/${result.testId}/take`" class="btn btn-primary">Пройти снова</router-link>
+      <div class="actions">
+        <router-link :to="`/tests/${result.testId}`" class="btn btn-primary">
+          🔄 Пройти снова
+        </router-link>
       </div>
+      
     </template>
+    
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * ==========================================
+ * ЛОГИКА ДЕТАЛЕЙ РЕЗУЛЬТАТА
+ * ==========================================
+ */
+
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useTestsStore } from '@/stores/tests'
-import type { TestResult } from '@/types'
+import api from '@/services/api'
+
+// ==========================================
+// ИНТЕРФЕЙСЫ
+// ==========================================
+
+interface QuestionResult {
+  text: string
+  userAnswer: string
+  correctAnswer: string
+  isCorrect: boolean
+  explanation?: string
+}
+
+interface ResultDetails {
+  id: string
+  testId: string
+  testTitle: string
+  testType: 'test' | 'exam'
+  score: number
+  passed: boolean
+  timeSpent: number
+  completedAt: string
+  questions: QuestionResult[]
+}
+
+// ==========================================
+// МАРШРУТИЗАЦИЯ
+// ==========================================
 
 const route = useRoute()
-const testsStore = useTestsStore()
 
-const result = ref<TestResult | null>(null)
+// ==========================================
+// СОСТОЯНИЕ
+// ==========================================
+
+/** Флаг загрузки */
 const isLoading = ref(true)
 
+/** Данные результата */
+const result = ref<ResultDetails | null>(null)
+
+// ==========================================
+// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
+// ==========================================
+
+/** Количество правильных ответов */
 const correctCount = computed(() =>
-  result.value?.questionStats?.filter(s => s.isCorrect).length || 0
+  result.value?.questions.filter(q => q.isCorrect).length || 0
 )
 
-const avgTime = computed(() => {
-  if (!result.value?.questionStats?.length) return 0
-  const total = result.value.questionStats.reduce((sum, s) => sum + s.timeSpent, 0)
-  return Math.round(total / result.value.questionStats.length)
-})
+/** Количество неправильных ответов */
+const wrongCount = computed(() =>
+  result.value?.questions.filter(q => !q.isCorrect).length || 0
+)
 
-function getScoreClass(percentage: number): string {
-  if (percentage >= 80) return 'excellent'
-  if (percentage >= 60) return 'good'
-  if (percentage >= 40) return 'average'
-  return 'poor'
-}
+// ==========================================
+// МЕТОДЫ
+// ==========================================
 
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  if (mins > 0) return `${mins}м ${secs}с`
-  return `${secs}с`
-}
-
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString('ru-RU', {
+/**
+ * Форматирует дату
+ */
+function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -119,27 +242,70 @@ function formatDate(date: Date): string {
   })
 }
 
-onMounted(async () => {
-  const id = route.params.id as string
+/**
+ * Форматирует время
+ */
+function formatTime(seconds: number): string {
+  if (!seconds) return '—'
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
-  // Загрузить результаты если ещё не загружены
-  if (testsStore.userResults.length === 0) {
-    await testsStore.loadUserResults()
+/**
+ * Возвращает класс для результата
+ */
+function getScoreClass(score: number): string {
+  if (score >= 80) return 'excellent'
+  if (score >= 60) return 'good'
+  if (score >= 40) return 'average'
+  return 'poor'
+}
+
+/**
+ * Загружает данные результата
+ */
+async function loadResult(): Promise<void> {
+  isLoading.value = true
+  
+  try {
+    const resultId = route.params.id as string
+    const response = await api.getResultById(resultId)
+    result.value = response.data
+  } catch (error) {
+    console.error('Ошибка загрузки результата:', error)
+    result.value = null
+  } finally {
+    isLoading.value = false
   }
+}
 
-  result.value = testsStore.getResultById(id)
-  isLoading.value = false
+// ==========================================
+// ЖИЗНЕННЫЙ ЦИКЛ
+// ==========================================
+
+onMounted(() => {
+  loadResult()
 })
 </script>
 
 <style scoped>
+/* ==========================================
+   СТИЛИ ДЕТАЛЕЙ РЕЗУЛЬТАТА
+   ========================================== */
+
 .result-details-page {
   padding: 2rem;
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
-.loading, .not-found {
+/* ==========================================
+   СОСТОЯНИЯ
+   ========================================== */
+
+.loading,
+.not-found {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -161,199 +327,282 @@ onMounted(async () => {
   to { transform: rotate(360deg); }
 }
 
-.page-header {
-  margin-bottom: 2rem;
-}
+/* ==========================================
+   НАВИГАЦИЯ
+   ========================================== */
 
 .back-link {
   display: inline-block;
   color: var(--color-text-muted);
   text-decoration: none;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
 }
 
 .back-link:hover {
   color: var(--color-primary);
 }
 
-.page-header h1 {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
+/* ==========================================
+   КАРТОЧКА РЕЗУЛЬТАТА
+   ========================================== */
 
-.mode-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-}
-
-.result-summary {
+.result-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 20px;
   padding: 2rem;
   margin-bottom: 2rem;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.type-badge {
+  display: inline-block;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.type-badge.test {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.type-badge.exam {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+.result-header h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.date {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* Круговой прогресс */
+.score-circle {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.circular-chart {
+  display: block;
+  max-width: 100%;
+}
+
+.circle-bg {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 2;
+}
+
+.circle {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  animation: progress 1s ease-out forwards;
+}
+
+.score-circle.excellent .circle { stroke: #4ade80; }
+.score-circle.good .circle { stroke: #60a5fa; }
+.score-circle.average .circle { stroke: #fbbf24; }
+.score-circle.poor .circle { stroke: #f87171; }
+
+@keyframes progress {
+  0% { stroke-dasharray: 0 100; }
+}
+
+.score-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   text-align: center;
 }
-
-.score-display {
-  padding: 1.5rem;
-  border-radius: 16px;
-  margin-bottom: 1.5rem;
-}
-
-.score-display.excellent { background: rgba(34, 197, 94, 0.15); }
-.score-display.good { background: rgba(59, 130, 246, 0.15); }
-.score-display.average { background: rgba(251, 191, 36, 0.15); }
-.score-display.poor { background: rgba(239, 68, 68, 0.15); }
 
 .score-value {
   display: block;
-  font-size: 3.5rem;
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
-.score-display.excellent .score-value { color: #4ade80; }
-.score-display.good .score-value { color: #60a5fa; }
-.score-display.average .score-value { color: #fbbf24; }
-.score-display.poor .score-value { color: #f87171; }
-
-.score-detail {
-  font-size: 1rem;
+.score-label {
+  font-size: 0.75rem;
   color: var(--color-text-muted);
 }
 
-.result-stats {
+/* Статистика */
+.stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 
-.stat {
-  text-align: center;
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   padding: 1rem;
   background: var(--color-background);
   border-radius: 12px;
 }
 
-.stat-value {
-  display: block;
+.stat-icon {
   font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-primary);
 }
 
-.stat-label {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.result-date {
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-}
-
-.questions-analysis {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-}
-
-.questions-analysis h2 {
-  font-size: 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-.question-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.question-item {
-  padding: 1rem;
-  border-radius: 12px;
-  border-left: 4px solid;
-}
-
-.question-item.correct {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: #4ade80;
-}
-
-.question-item.incorrect {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: #f87171;
-}
-
-.question-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.question-number {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface);
-  border-radius: 8px;
-  font-size: 0.85rem;
+.stat-value {
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
-.question-status {
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.question-item.correct .question-status { color: #4ade80; }
-.question-item.incorrect .question-status { color: #f87171; }
-
-.question-time {
-  margin-left: auto;
+.stat-label {
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
-.question-text {
-  font-size: 0.95rem;
-  color: var(--color-text);
-  margin-bottom: 0.5rem;
+/* ==========================================
+   РАЗБОР ВОПРОСОВ
+   ========================================== */
+
+.questions-review {
+  margin-bottom: 2rem;
 }
 
-.question-category {
-  display: inline-block;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
+.questions-review h2 {
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+}
+
+.question-card {
   background: var(--color-surface);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid transparent;
 }
 
-.result-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
+.question-card.correct {
+  border-left-color: #4ade80;
 }
+
+.question-card.wrong {
+  border-left-color: #f87171;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.question-number {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.question-status {
+  font-size: 0.9rem;
+}
+
+.question-card.correct .question-status {
+  color: #4ade80;
+}
+
+.question-card.wrong .question-status {
+  color: #f87171;
+}
+
+.question-text {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+/* Ответы */
+.answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.answer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.your-answer {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.your-answer.correct {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.correct-answer {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.answer-label {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.answer-text {
+  font-weight: 500;
+}
+
+/* Объяснение */
+.explanation {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(251, 191, 36, 0.1);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #fbbf24;
+}
+
+/* ==========================================
+   ДЕЙСТВИЯ
+   ========================================== */
+
+.actions {
+  text-align: center;
+}
+
+/* ==========================================
+   АДАПТИВНОСТЬ
+   ========================================== */
 
 @media (max-width: 600px) {
-  .result-stats {
-    grid-template-columns: 1fr;
+  .result-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
   }
 
-  .result-actions {
-    flex-direction: column;
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

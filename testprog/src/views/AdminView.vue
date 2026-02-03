@@ -1,178 +1,248 @@
+<!--
+  ==========================================
+  ПАНЕЛЬ АДМИНИСТРАТОРА (AdminView.vue)
+  ==========================================
+  
+  Административная панель с функциями:
+  - Статистика системы
+  - Управление пользователями
+  - Модерация тестов
+  - Рассылка уведомлений
+-->
+
 <template>
   <div class="admin-page">
-    <header class="page-header">
-      <h1>Админ-панель</h1>
-      <p>Управление системой</p>
-    </header>
-
-    <!-- Статистика -->
-    <section class="stats-section">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-value">{{ stats.totalUsers }}</span>
-          <span class="stat-label">Пользователей</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value">{{ stats.totalTests }}</span>
-          <span class="stat-label">Тестов</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value">{{ stats.totalResults }}</span>
-          <span class="stat-label">Прохождений</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value">{{ stats.activeToday }}</span>
-          <span class="stat-label">Активных сегодня</span>
-        </div>
+    
+    <!-- ==========================================
+         БОКОВАЯ ПАНЕЛЬ
+         ========================================== -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>🛠️ Админ-панель</h2>
       </div>
-    </section>
 
-    <!-- Табы -->
-    <div class="tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        :class="['tab', { active: activeTab === tab.id }]"
-        @click="activeTab = tab.id"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
+      <!-- Навигация -->
+      <nav class="sidebar-nav">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="nav-item"
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          <span class="nav-icon">{{ tab.icon }}</span>
+          <span>{{ tab.label }}</span>
+        </button>
+      </nav>
+    </aside>
 
-    <!-- Пользователи -->
-    <section v-if="activeTab === 'users'" class="content-section">
-      <div class="section-header">
-        <h2>Пользователи</h2>
-        <div class="search-box">
+    <!-- ==========================================
+         ОСНОВНОЙ КОНТЕНТ
+         ========================================== -->
+    <main class="content">
+      
+      <!-- ==========================================
+           СТАТИСТИКА
+           ========================================== -->
+      <section v-if="activeTab === 'stats'" class="section">
+        <h1>📊 Статистика системы</h1>
+        
+        <!-- Карточки статистики -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value">{{ stats.totalUsers }}</div>
+            <div class="stat-label">Пользователей</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value">{{ stats.totalTests }}</div>
+            <div class="stat-label">Тестов</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">{{ stats.totalAttempts }}</div>
+            <div class="stat-label">Прохождений</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-value">{{ stats.averageScore }}%</div>
+            <div class="stat-label">Средний балл</div>
+          </div>
+        </div>
+
+        <!-- Распределение по ролям -->
+        <div class="chart-card">
+          <h3>Пользователи по ролям</h3>
+          <div class="roles-chart">
+            <div class="role-bar">
+              <div class="role-label">Студенты</div>
+              <div class="role-progress">
+                <div 
+                  class="role-fill student" 
+                  :style="{ width: getPercent(stats.students, stats.totalUsers) + '%' }"
+                ></div>
+              </div>
+              <div class="role-count">{{ stats.students }}</div>
+            </div>
+            <div class="role-bar">
+              <div class="role-label">Учителя</div>
+              <div class="role-progress">
+                <div 
+                  class="role-fill teacher" 
+                  :style="{ width: getPercent(stats.teachers, stats.totalUsers) + '%' }"
+                ></div>
+              </div>
+              <div class="role-count">{{ stats.teachers }}</div>
+            </div>
+            <div class="role-bar">
+              <div class="role-label">Админы</div>
+              <div class="role-progress">
+                <div 
+                  class="role-fill admin" 
+                  :style="{ width: getPercent(stats.admins, stats.totalUsers) + '%' }"
+                ></div>
+              </div>
+              <div class="role-count">{{ stats.admins }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           ПОЛЬЗОВАТЕЛИ
+           ========================================== -->
+      <section v-else-if="activeTab === 'users'" class="section">
+        <h1>👥 Управление пользователями</h1>
+        
+        <!-- Поиск -->
+        <div class="search-bar">
           <input
             v-model="userSearch"
             type="search"
-            placeholder="Поиск по email или имени..."
+            placeholder="🔍 Поиск по имени или email..."
+            @input="searchUsers"
           />
         </div>
-      </div>
 
-      <div v-if="isLoadingUsers" class="loading">
-        <div class="spinner"></div>
-      </div>
-
-      <div v-else class="users-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Пользователь</th>
-              <th>Email</th>
-              <th>Роль</th>
-              <th>Регистрация</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in filteredUsers" :key="user.id">
-              <td>
-                <div class="user-cell">
-                  <div class="user-avatar">{{ user.name.charAt(0) }}</div>
+        <!-- Таблица пользователей -->
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Пользователь</th>
+                <th>Email</th>
+                <th>Роль</th>
+                <th>Дата регистрации</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="user in filteredUsers" :key="user.id">
+                <td class="user-cell">
+                  <span class="user-avatar">{{ user.name.charAt(0) }}</span>
                   <span>{{ user.name }}</span>
-                </div>
-              </td>
-              <td>{{ user.email }}</td>
-              <td>
-                <select
-                  :value="user.role"
-                  @change="updateUserRole(user.id, ($event.target as HTMLSelectElement).value)"
-                  class="role-select"
-                >
-                  <option value="student">Студент</option>
-                  <option value="teacher">Учитель</option>
-                  <option value="admin">Админ</option>
-                </select>
-              </td>
-              <td>{{ formatDate(user.createdAt) }}</td>
-              <td>
-                <button
-                  class="btn btn-sm btn-danger"
-                  @click="deleteUser(user.id)"
-                  :disabled="user.role === 'admin'"
-                >
-                  Удалить
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+                </td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <select 
+                    :value="user.role" 
+                    @change="changeUserRole(user.id, ($event.target as HTMLSelectElement).value)"
+                    class="role-select"
+                  >
+                    <option value="student">Студент</option>
+                    <option value="teacher">Учитель</option>
+                    <option value="admin">Админ</option>
+                  </select>
+                </td>
+                <td class="date">{{ formatDate(user.createdAt) }}</td>
+                <td>
+                  <button 
+                    @click="confirmDeleteUser(user)" 
+                    class="btn btn-sm btn-danger"
+                    :disabled="user.role === 'admin'"
+                  >
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-    <!-- Уведомления -->
-    <section v-if="activeTab === 'notifications'" class="content-section">
-      <div class="section-header">
-        <h2>Рассылка уведомлений</h2>
-      </div>
+      <!-- ==========================================
+           РАССЫЛКА
+           ========================================== -->
+      <section v-else-if="activeTab === 'broadcast'" class="section">
+        <h1>📢 Рассылка уведомлений</h1>
+        
+        <div class="form-card">
+          <form @submit.prevent="sendBroadcast">
+            <!-- Заголовок -->
+            <div class="form-group">
+              <label for="broadcastTitle">Заголовок</label>
+              <input
+                id="broadcastTitle"
+                v-model="broadcastForm.title"
+                type="text"
+                placeholder="Тема уведомления"
+                required
+              />
+            </div>
 
-      <form @submit.prevent="sendBroadcast" class="broadcast-form">
-        <div class="form-group">
-          <label>Заголовок</label>
-          <input
-            v-model="broadcast.title"
-            type="text"
-            placeholder="Заголовок уведомления"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <label>Сообщение</label>
-          <textarea
-            v-model="broadcast.message"
-            rows="4"
-            placeholder="Текст уведомления для всех пользователей..."
-            required
-          ></textarea>
-        </div>
-        <div class="form-group">
-          <label>Тип</label>
-          <select v-model="broadcast.type">
-            <option value="info">Информация</option>
-            <option value="warning">Предупреждение</option>
-            <option value="success">Успех</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary" :disabled="isSendingBroadcast">
-          {{ isSendingBroadcast ? 'Отправка...' : 'Отправить всем' }}
-        </button>
-      </form>
-    </section>
+            <!-- Сообщение -->
+            <div class="form-group">
+              <label for="broadcastMessage">Сообщение</label>
+              <textarea
+                id="broadcastMessage"
+                v-model="broadcastForm.message"
+                rows="5"
+                placeholder="Текст уведомления..."
+                required
+              ></textarea>
+            </div>
 
-    <!-- Система -->
-    <section v-if="activeTab === 'system'" class="content-section">
-      <div class="section-header">
-        <h2>Информация о системе</h2>
-      </div>
+            <!-- Получатели -->
+            <div class="form-group">
+              <label>Получатели</label>
+              <div class="checkbox-group">
+                <label>
+                  <input type="checkbox" v-model="broadcastForm.toStudents" />
+                  <span>👨‍🎓 Студенты</span>
+                </label>
+                <label>
+                  <input type="checkbox" v-model="broadcastForm.toTeachers" />
+                  <span>👨‍🏫 Учителя</span>
+                </label>
+              </div>
+            </div>
 
-      <div class="system-info">
-        <div class="info-row">
-          <span class="info-label">Версия API</span>
-          <span class="info-value">{{ systemInfo.version }}</span>
+            <button type="submit" class="btn btn-primary" :disabled="isSending">
+              {{ isSending ? '⏳ Отправка...' : '📤 Отправить' }}
+            </button>
+          </form>
         </div>
-        <div class="info-row">
-          <span class="info-label">База данных</span>
-          <span class="info-value">SQLite (Prisma ORM)</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Всего тестов</span>
-          <span class="info-value">{{ stats.totalTests }}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Всего вопросов</span>
-          <span class="info-value">{{ stats.totalQuestions || 0 }}</span>
-        </div>
-      </div>
-    </section>
+      </section>
+      
+    </main>
+    
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * ==========================================
+ * ЛОГИКА АДМИН-ПАНЕЛИ
+ * ==========================================
+ */
+
 import { ref, reactive, computed, onMounted } from 'vue'
-import { api } from '@/services/api'
+import api from '@/services/api'
+
+// ==========================================
+// ИНТЕРФЕЙСЫ
+// ==========================================
 
 interface User {
   id: string
@@ -182,121 +252,197 @@ interface User {
   createdAt: string
 }
 
-interface Stats {
+interface SystemStats {
   totalUsers: number
   totalTests: number
-  totalResults: number
-  activeToday: number
-  totalQuestions?: number
+  totalAttempts: number
+  averageScore: number
+  students: number
+  teachers: number
+  admins: number
 }
 
+// ==========================================
+// ВКЛАДКИ
+// ==========================================
+
 const tabs = [
-  { id: 'users', label: 'Пользователи' },
-  { id: 'notifications', label: 'Уведомления' },
-  { id: 'system', label: 'Система' }
+  { id: 'stats', icon: '📊', label: 'Статистика' },
+  { id: 'users', icon: '👥', label: 'Пользователи' },
+  { id: 'broadcast', icon: '📢', label: 'Рассылка' }
 ]
 
-const activeTab = ref('users')
-const userSearch = ref('')
-const users = ref<User[]>([])
-const isLoadingUsers = ref(true)
-const isSendingBroadcast = ref(false)
+const activeTab = ref('stats')
 
-const stats = reactive<Stats>({
+// ==========================================
+// СОСТОЯНИЕ
+// ==========================================
+
+/** Статистика системы */
+const stats = reactive<SystemStats>({
   totalUsers: 0,
   totalTests: 0,
-  totalResults: 0,
-  activeToday: 0
+  totalAttempts: 0,
+  averageScore: 0,
+  students: 0,
+  teachers: 0,
+  admins: 0
 })
 
-const systemInfo = reactive({
-  version: '2.0.0'
-})
+/** Список пользователей */
+const users = ref<User[]>([])
 
-const broadcast = reactive({
+/** Поиск пользователей */
+const userSearch = ref('')
+
+/** Форма рассылки */
+const broadcastForm = reactive({
   title: '',
   message: '',
-  type: 'info'
+  toStudents: true,
+  toTeachers: true
 })
 
+/** Флаг отправки */
+const isSending = ref(false)
+
+// ==========================================
+// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
+// ==========================================
+
+/** Отфильтрованные пользователи */
 const filteredUsers = computed(() => {
-  const query = userSearch.value.toLowerCase()
+  const query = userSearch.value.toLowerCase().trim()
   if (!query) return users.value
-  return users.value.filter(u =>
-    u.name.toLowerCase().includes(query) ||
-    u.email.toLowerCase().includes(query)
+  
+  return users.value.filter(user =>
+    user.name.toLowerCase().includes(query) ||
+    user.email.toLowerCase().includes(query)
   )
 })
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  })
+// ==========================================
+// МЕТОДЫ
+// ==========================================
+
+/**
+ * Вычисляет процент
+ */
+function getPercent(value: number, total: number): number {
+  if (total === 0) return 0
+  return Math.round((value / total) * 100)
 }
 
-async function loadStats() {
+/**
+ * Форматирует дату
+ */
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('ru-RU')
+}
+
+/**
+ * Загружает статистику
+ */
+async function loadStats(): Promise<void> {
   try {
-    const data = await api.getAdminStats()
-    Object.assign(stats, data)
-  } catch (e) {
-    console.error('Failed to load stats:', e)
+    const response = await api.getAdminStats()
+    Object.assign(stats, response.data)
+  } catch (error) {
+    console.error('Ошибка загрузки статистики:', error)
   }
 }
 
-async function loadUsers() {
-  isLoadingUsers.value = true
+/**
+ * Загружает пользователей
+ */
+async function loadUsers(): Promise<void> {
   try {
-    const data = await api.getAdminUsers()
-    users.value = data
-  } catch (e) {
-    console.error('Failed to load users:', e)
-  } finally {
-    isLoadingUsers.value = false
+    const response = await api.getAllUsers()
+    users.value = response.data
+  } catch (error) {
+    console.error('Ошибка загрузки пользователей:', error)
   }
 }
 
-async function updateUserRole(userId: string, newRole: string) {
+/**
+ * Поиск пользователей
+ */
+function searchUsers(): void {
+  // Фильтрация происходит через computed
+}
+
+/**
+ * Изменяет роль пользователя
+ */
+async function changeUserRole(userId: string, newRole: string): Promise<void> {
   try {
     await api.updateUserRole(userId, newRole)
+    
+    // Обновляем локально
     const user = users.value.find(u => u.id === userId)
     if (user) user.role = newRole
-  } catch (e) {
-    console.error('Failed to update role:', e)
-    alert('Ошибка при изменении роли')
+    
+    // Обновляем статистику
+    loadStats()
+  } catch (error) {
+    console.error('Ошибка изменения роли:', error)
+    alert('❌ Ошибка при изменении роли')
   }
 }
 
-async function deleteUser(userId: string) {
-  if (!confirm('Вы уверены? Это действие нельзя отменить.')) return
-
-  try {
-    await api.deleteUserAdmin(userId)
-    users.value = users.value.filter(u => u.id !== userId)
-    stats.totalUsers--
-  } catch (e) {
-    console.error('Failed to delete user:', e)
-    alert('Ошибка при удалении пользователя')
+/**
+ * Подтверждение удаления пользователя
+ */
+async function confirmDeleteUser(user: User): Promise<void> {
+  const confirmed = confirm(
+    `⚠️ Удалить пользователя "${user.name}"?\n\n` +
+    'Это действие нельзя отменить.'
+  )
+  
+  if (confirmed) {
+    try {
+      await api.deleteUser(user.id)
+      users.value = users.value.filter(u => u.id !== user.id)
+      loadStats()
+    } catch (error) {
+      console.error('Ошибка удаления:', error)
+      alert('❌ Ошибка при удалении пользователя')
+    }
   }
 }
 
-async function sendBroadcast() {
-  if (!broadcast.title || !broadcast.message) return
-
-  isSendingBroadcast.value = true
+/**
+ * Отправляет рассылку
+ */
+async function sendBroadcast(): Promise<void> {
+  if (!broadcastForm.title || !broadcastForm.message) return
+  
+  isSending.value = true
+  
   try {
-    await api.broadcastNotification(broadcast.title, broadcast.message, broadcast.type)
-    alert('Уведомление отправлено всем пользователям!')
-    broadcast.title = ''
-    broadcast.message = ''
-  } catch (e) {
-    console.error('Failed to send broadcast:', e)
-    alert('Ошибка при отправке уведомления')
+    await api.sendBroadcast({
+      title: broadcastForm.title,
+      message: broadcastForm.message,
+      toStudents: broadcastForm.toStudents,
+      toTeachers: broadcastForm.toTeachers
+    })
+    
+    // Очищаем форму
+    broadcastForm.title = ''
+    broadcastForm.message = ''
+    
+    alert('✅ Уведомление отправлено!')
+  } catch (error) {
+    console.error('Ошибка рассылки:', error)
+    alert('❌ Ошибка при отправке')
   } finally {
-    isSendingBroadcast.value = false
+    isSending.value = false
   }
 }
+
+// ==========================================
+// ЖИЗНЕННЫЙ ЦИКЛ
+// ==========================================
 
 onMounted(() => {
   loadStats()
@@ -305,34 +451,93 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ==========================================
+   СТИЛИ АДМИН-ПАНЕЛИ
+   ========================================== */
+
 .admin-page {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: 2rem;
+/* ==========================================
+   БОКОВАЯ ПАНЕЛЬ
+   ========================================== */
+
+.sidebar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  height: fit-content;
+  position: sticky;
+  top: 5rem;
 }
 
-.page-header h1 {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+.sidebar-header h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.page-header p {
-  color: var(--color-text-muted);
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-/* Stats */
-.stats-section {
-  margin-bottom: 2rem;
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
 }
+
+.nav-item:hover {
+  background: var(--color-background);
+}
+
+.nav-item.active {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--color-primary);
+}
+
+.nav-icon {
+  font-size: 1.1rem;
+}
+
+/* ==========================================
+   ОСНОВНОЙ КОНТЕНТ
+   ========================================== */
+
+.section h1 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ==========================================
+   СТАТИСТИКА
+   ========================================== */
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .stat-card {
@@ -343,124 +548,134 @@ onMounted(() => {
   text-align: center;
 }
 
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .stat-value {
-  display: block;
   font-size: 2rem;
   font-weight: 700;
   color: var(--color-primary);
-  margin-bottom: 0.25rem;
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-text-muted);
+  margin-top: 0.25rem;
 }
 
-/* Tabs */
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 0.5rem;
-}
-
-.tab {
-  padding: 0.75rem 1.25rem;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tab:hover {
-  color: var(--color-text);
-  background: var(--color-surface);
-}
-
-.tab.active {
-  color: var(--color-primary);
-  background: var(--accent-glow);
-}
-
-/* Content */
-.content-section {
+/* График ролей */
+.chart-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 1.5rem;
 }
 
-.section-header {
+.chart-card h3 {
+  font-size: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.roles-chart {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.role-bar {
+  display: grid;
+  grid-template-columns: 100px 1fr 40px;
   align-items: center;
+  gap: 1rem;
+}
+
+.role-label {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.role-progress {
+  height: 8px;
+  background: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.role-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.role-fill.student { background: #4ade80; }
+.role-fill.teacher { background: #60a5fa; }
+.role-fill.admin { background: #f87171; }
+
+.role-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ==========================================
+   ПОЛЬЗОВАТЕЛИ
+   ========================================== */
+
+.search-bar {
   margin-bottom: 1.5rem;
 }
 
-.section-header h2 {
-  font-size: 1.25rem;
-}
-
-.search-box input {
-  padding: 0.625rem 1rem;
-  background: var(--color-background);
+.search-bar input {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.875rem 1.25rem;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 12px;
+  font-size: 1rem;
   color: var(--color-text);
-  min-width: 250px;
 }
 
-.search-box input:focus {
+.search-bar input:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-/* Loading */
-.loading {
-  display: flex;
-  justify-content: center;
-  padding: 3rem;
+/* Таблица */
+.table-wrapper {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  overflow: hidden;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Users table */
-.users-table {
-  overflow-x: auto;
-}
-
-table {
+.data-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-th, td {
+.data-table th,
+.data-table td {
   padding: 1rem;
   text-align: left;
+}
+
+.data-table th {
+  background: var(--color-background);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
   border-bottom: 1px solid var(--color-border);
 }
 
-th {
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
+.data-table td {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
 }
 
 .user-cell {
@@ -470,19 +685,20 @@ th {
 }
 
 .user-avatar {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border-radius: 8px;
+  font-size: 0.85rem;
   font-weight: 600;
   color: white;
 }
 
 .role-select {
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.75rem;
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -491,45 +707,56 @@ th {
   cursor: pointer;
 }
 
+.date {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
 .btn-sm {
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
 }
 
 .btn-danger {
-  background: #ef4444;
-  color: white;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
   border: none;
 }
 
-.btn-danger:hover:not(:disabled) {
-  background: #dc2626;
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .btn-danger:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
-/* Broadcast form */
-.broadcast-form {
+/* ==========================================
+   РАССЫЛКА
+   ========================================== */
+
+.form-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 1.5rem;
   max-width: 600px;
 }
 
-.broadcast-form .form-group {
+.form-group {
   margin-bottom: 1.25rem;
 }
 
-.broadcast-form label {
+.form-group label {
   display: block;
   font-size: 0.9rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
 }
 
-.broadcast-form input,
-.broadcast-form textarea,
-.broadcast-form select {
+.form-group input,
+.form-group textarea {
   width: 100%;
   padding: 0.75rem 1rem;
   background: var(--color-background);
@@ -537,42 +764,65 @@ th {
   border-radius: 10px;
   font-size: 1rem;
   color: var(--color-text);
+  font-family: inherit;
 }
 
-.broadcast-form input:focus,
-.broadcast-form textarea:focus,
-.broadcast-form select:focus {
+.form-group input:focus,
+.form-group textarea:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-/* System info */
-.system-info {
+.form-group textarea {
+  resize: vertical;
+}
+
+.checkbox-group {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
-.info-row {
+.checkbox-group label {
   display: flex;
-  justify-content: space-between;
-  padding: 1rem;
-  background: var(--color-background);
-  border-radius: 10px;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-bottom: 0;
 }
 
-.info-label {
-  color: var(--color-text-muted);
+.checkbox-group input {
+  width: 18px;
+  height: 18px;
 }
 
-.info-value {
-  font-weight: 600;
-}
+/* ==========================================
+   АДАПТИВНОСТЬ
+   ========================================== */
 
-/* Responsive */
 @media (max-width: 900px) {
+  .admin-page {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .data-table {
+    min-width: 600px;
   }
 }
 
@@ -580,29 +830,5 @@ th {
   .stats-grid {
     grid-template-columns: 1fr;
   }
-
-  .section-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-
-  .search-box input {
-    min-width: 100%;
-  }
-
-  .tabs {
-    flex-wrap: wrap;
-  }
-
-  table {
-    font-size: 0.85rem;
-  }
-
-  th, td {
-    padding: 0.75rem 0.5rem;
-  }
 }
 </style>
-
-

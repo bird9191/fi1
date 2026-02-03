@@ -1,85 +1,158 @@
+<!--
+  ==========================================
+  ПОДТВЕРЖДЕНИЕ EMAIL (VerifyEmailView.vue)
+  ==========================================
+  
+  Страница подтверждения email:
+  - Проверка токена из URL
+  - Отображение результата
+-->
+
 <template>
   <div class="auth-page">
     <div class="auth-card">
-      <!-- Проверка -->
-      <div v-if="isVerifying" class="loading-state">
+      
+      <!-- ==========================================
+           ЗАГРУЗКА
+           ========================================== -->
+      <div v-if="isLoading" class="loading-state">
         <div class="spinner"></div>
         <p>Подтверждение email...</p>
       </div>
 
-      <!-- Успех -->
-      <div v-else-if="success" class="success-state">
-        <div class="success-icon">✓</div>
+      <!-- ==========================================
+           УСПЕХ
+           ========================================== -->
+      <div v-else-if="isSuccess" class="success-message">
+        <div class="success-icon">✅</div>
         <h2>Email подтверждён!</h2>
-        <p>Ваш аккаунт активирован. Теперь вы можете пользоваться всеми функциями.</p>
+        <p>Теперь вы можете использовать все функции платформы</p>
         <router-link to="/dashboard" class="btn btn-primary">
-          Перейти в кабинет
+          🏠 Перейти в личный кабинет
         </router-link>
       </div>
 
-      <!-- Ошибка -->
+      <!-- ==========================================
+           ОШИБКА
+           ========================================== -->
       <div v-else class="error-state">
-        <div class="error-icon">!</div>
+        <div class="error-icon">⚠️</div>
         <h2>Ошибка подтверждения</h2>
-        <p>{{ error || 'Ссылка недействительна или истекла' }}</p>
-        <div class="error-actions">
+        <p>{{ errorMessage }}</p>
+        
+        <div class="actions">
           <button @click="resendVerification" class="btn btn-outline" :disabled="isResending">
-            {{ isResending ? 'Отправка...' : 'Отправить повторно' }}
+            {{ isResending ? '⏳ Отправка...' : '📤 Отправить повторно' }}
           </button>
           <router-link to="/login" class="btn btn-primary">
-            Войти
+            🔐 Войти
           </router-link>
         </div>
       </div>
+      
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * ==========================================
+ * ЛОГИКА ПОДТВЕРЖДЕНИЯ EMAIL
+ * ==========================================
+ */
+
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { api } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/services/api'
+
+// ==========================================
+// МАРШРУТИЗАЦИЯ И ХРАНИЛИЩА
+// ==========================================
 
 const route = useRoute()
+const authStore = useAuthStore()
 
-const isVerifying = ref(true)
-const success = ref(false)
-const error = ref('')
+// ==========================================
+// СОСТОЯНИЕ
+// ==========================================
+
+/** Флаг загрузки */
+const isLoading = ref(true)
+
+/** Флаг успешного подтверждения */
+const isSuccess = ref(false)
+
+/** Флаг повторной отправки */
 const isResending = ref(false)
 
-async function verifyEmail() {
+/** Сообщение об ошибке */
+const errorMessage = ref('')
+
+// ==========================================
+// МЕТОДЫ
+// ==========================================
+
+/**
+ * Подтверждает email по токену
+ */
+async function verifyEmail(): Promise<void> {
   const token = route.query.token as string
   
   if (!token) {
-    error.value = 'Отсутствует токен подтверждения'
-    isVerifying.value = false
+    errorMessage.value = 'Отсутствует токен подтверждения'
+    isLoading.value = false
     return
   }
-
+  
   try {
     await api.verifyEmail(token)
-    success.value = true
-  } catch (e: unknown) {
-    const err = e as { message?: string }
-    error.value = err.message || 'Ошибка подтверждения email'
+    isSuccess.value = true
+    
+    // Обновляем данные пользователя
+    if (authStore.isAuthenticated) {
+      await authStore.refreshUser()
+    }
+  } catch (error: any) {
+    console.error('Ошибка подтверждения:', error)
+    
+    if (error.response?.status === 400) {
+      errorMessage.value = 'Ссылка недействительна или уже была использована'
+    } else if (error.response?.status === 404) {
+      errorMessage.value = 'Ссылка для подтверждения не найдена'
+    } else {
+      errorMessage.value = 'Произошла ошибка. Попробуйте позже.'
+    }
   } finally {
-    isVerifying.value = false
+    isLoading.value = false
   }
 }
 
-async function resendVerification() {
+/**
+ * Отправляет повторное письмо подтверждения
+ */
+async function resendVerification(): Promise<void> {
+  if (!authStore.isAuthenticated) {
+    alert('Войдите в аккаунт для повторной отправки')
+    return
+  }
+  
   isResending.value = true
   
   try {
-    await api.resendVerification()
-    alert('Письмо отправлено! Проверьте почту.')
-  } catch (e: unknown) {
-    const err = e as { message?: string }
-    alert(err.message || 'Ошибка отправки')
+    await api.resendVerificationEmail()
+    alert('✅ Письмо отправлено! Проверьте почту.')
+  } catch (error) {
+    console.error('Ошибка отправки:', error)
+    alert('❌ Ошибка при отправке письма')
   } finally {
     isResending.value = false
   }
 }
+
+// ==========================================
+// ЖИЗНЕННЫЙ ЦИКЛ
+// ==========================================
 
 onMounted(() => {
   verifyEmail()
@@ -87,38 +160,44 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ==========================================
+   СТИЛИ ПОДТВЕРЖДЕНИЯ EMAIL
+   ========================================== */
+
 .auth-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 60px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: radial-gradient(ellipse at top, var(--accent-glow) 0%, transparent 50%);
 }
 
 .auth-card {
-  width: 100%;
-  max-width: 420px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 24px;
   padding: 2.5rem;
-  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
 }
 
+/* ==========================================
+   ЗАГРУЗКА
+   ========================================== */
+
 .loading-state {
-  text-align: center;
   padding: 2rem 0;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1.5rem;
   border: 3px solid var(--color-border);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
 }
 
 @keyframes spin {
@@ -129,54 +208,56 @@ onMounted(() => {
   color: var(--color-text-muted);
 }
 
-.success-state, .error-state {
-  text-align: center;
+/* ==========================================
+   УСПЕХ / ОШИБКА
+   ========================================== */
+
+.success-message,
+.error-state {
+  padding: 1rem 0;
 }
 
-.success-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  font-weight: bold;
-}
-
+.success-icon,
 .error-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  font-weight: bold;
+  font-size: 3.5rem;
+  margin-bottom: 1.25rem;
 }
 
-.success-state h2, .error-state h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+.success-message h2 {
+  color: #4ade80;
 }
 
-.success-state p, .error-state p {
+.error-state h2 {
+  color: #fbbf24;
+}
+
+.success-message h2,
+.error-state h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.success-message p,
+.error-state p {
   color: var(--color-text-muted);
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   line-height: 1.6;
 }
 
-.error-actions {
+/* ==========================================
+   ДЕЙСТВИЯ
+   ========================================== */
+
+.actions {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
+
+.actions .btn {
+  width: 100%;
+}
 </style>
+
 
 
