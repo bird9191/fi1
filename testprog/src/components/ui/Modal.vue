@@ -1,33 +1,20 @@
-<!--
-  ==========================================
-  КОМПОНЕНТ МОДАЛЬНОГО ОКНА (Modal.vue)
-  ==========================================
-  
-  Всплывающее окно для диалогов
--->
-
 <template>
   <Teleport to="body">
     <Transition name="modal">
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal" :class="`modal-${size}`">
-          
-          <!-- Заголовок -->
           <div class="modal-header">
             <h2 class="modal-title">{{ title }}</h2>
             <button class="modal-close" @click="close">✕</button>
           </div>
           
-          <!-- Контент -->
           <div class="modal-body">
             <slot />
           </div>
           
-          <!-- Футер (если есть) -->
           <div v-if="$slots.footer" class="modal-footer">
             <slot name="footer" />
           </div>
-          
         </div>
       </div>
     </Transition>
@@ -35,15 +22,9 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Пропсы компонента
- */
 interface Props {
-  /** Видимость (v-model) */
   modelValue: boolean
-  /** Заголовок */
   title: string
-  /** Размер */
   size?: 'sm' | 'md' | 'lg'
 }
 
@@ -55,17 +36,12 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean]
 }>()
 
-/** Закрывает модальное окно */
 function close() {
   emit('update:modelValue', false)
 }
 </script>
 
 <style scoped>
-/* ==========================================
-   ОВЕРЛЕЙ
-   ========================================== */
-
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -80,10 +56,6 @@ function close() {
   z-index: 1000;
 }
 
-/* ==========================================
-   МОДАЛЬНОЕ ОКНО
-   ========================================== */
-
 .modal {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -95,14 +67,9 @@ function close() {
   flex-direction: column;
 }
 
-/* Размеры */
 .modal-sm { max-width: 400px; }
 .modal-md { max-width: 560px; }
 .modal-lg { max-width: 720px; }
-
-/* ==========================================
-   ЗАГОЛОВОК
-   ========================================== */
 
 .modal-header {
   display: flex;
@@ -135,18 +102,10 @@ function close() {
   background: var(--color-background);
 }
 
-/* ==========================================
-   КОНТЕНТ
-   ========================================== */
-
 .modal-body {
   padding: 1.5rem;
   overflow-y: auto;
 }
-
-/* ==========================================
-   ФУТЕР
-   ========================================== */
 
 .modal-footer {
   padding: 1rem 1.5rem;
@@ -155,10 +114,6 @@ function close() {
   justify-content: flex-end;
   gap: 0.75rem;
 }
-
-/* ==========================================
-   АНИМАЦИЯ
-   ========================================== */
 
 .modal-enter-active,
 .modal-leave-active {
@@ -180,7 +135,4 @@ function close() {
   transform: scale(0.95);
 }
 </style>
-
-
-
 

@@ -1,29 +1,13 @@
-<!--
-  ==========================================
-  КОМПОНЕНТ ПОЛЯ ВВОДА (Input.vue)
-  ==========================================
-  
-  Универсальное поле ввода с:
-  - Лейблом
-  - Иконкой
-  - Валидацией
-  - Состоянием ошибки
--->
-
 <template>
   <div class="input-group" :class="{ 'has-error': error }">
-    <!-- Лейбл -->
     <label v-if="label" :for="inputId" class="input-label">
       {{ label }}
       <span v-if="required" class="required">*</span>
     </label>
     
-    <!-- Контейнер поля -->
     <div class="input-wrapper">
-      <!-- Иконка слева -->
       <span v-if="icon" class="input-icon">{{ icon }}</span>
       
-      <!-- Поле ввода -->
       <input
         :id="inputId"
         :type="type"
@@ -41,10 +25,8 @@
       />
     </div>
     
-    <!-- Сообщение об ошибке -->
     <span v-if="error" class="input-error">{{ error }}</span>
     
-    <!-- Подсказка -->
     <span v-else-if="hint" class="input-hint">{{ hint }}</span>
   </div>
 </template>
@@ -52,31 +34,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-/**
- * Пропсы компонента
- */
 interface Props {
-  /** Значение (v-model) */
   modelValue?: string | number
-  /** Тип поля */
   type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'search'
-  /** Лейбл */
   label?: string
-  /** Плейсхолдер */
   placeholder?: string
-  /** Иконка */
   icon?: string
-  /** Сообщение об ошибке */
   error?: string
-  /** Подсказка */
   hint?: string
-  /** Обязательное поле */
   required?: boolean
-  /** Отключено */
   disabled?: boolean
-  /** Минимальная длина */
   minlength?: number
-  /** Максимальная длина */
   maxlength?: number
 }
 
@@ -98,26 +66,17 @@ defineEmits<{
   focus: []
 }>()
 
-/** Уникальный ID для связи label-input */
 const inputId = computed(() => 
   `input-${Math.random().toString(36).substring(2, 9)}`
 )
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ ПОЛЯ ВВОДА
-   ========================================== */
-
 .input-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-
-/* ==========================================
-   ЛЕЙБЛ
-   ========================================== */
 
 .input-label {
   font-size: 0.9rem;
@@ -129,10 +88,6 @@ const inputId = computed(() =>
   color: #ef4444;
   margin-left: 0.25rem;
 }
-
-/* ==========================================
-   КОНТЕЙНЕР
-   ========================================== */
 
 .input-wrapper {
   position: relative;
@@ -147,10 +102,6 @@ const inputId = computed(() =>
   color: var(--color-text-muted);
   pointer-events: none;
 }
-
-/* ==========================================
-   ПОЛЕ ВВОДА
-   ========================================== */
 
 .input-field {
   width: 100%;
@@ -182,10 +133,6 @@ const inputId = computed(() =>
   color: var(--color-text-muted);
 }
 
-/* ==========================================
-   СОСТОЯНИЕ ОШИБКИ
-   ========================================== */
-
 .has-error .input-field {
   border-color: #ef4444;
 }
@@ -199,16 +146,9 @@ const inputId = computed(() =>
   color: #ef4444;
 }
 
-/* ==========================================
-   ПОДСКАЗКА
-   ========================================== */
-
 .input-hint {
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
 </style>
-
-
-
 

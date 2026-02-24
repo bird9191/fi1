@@ -11,53 +11,32 @@
 -->
 
 <template>
-  <!-- Обёртка всего приложения -->
   <div class="app">
+    <AppHeader />
     
-    <!-- Верхняя навигационная панель -->
-    <NavBar />
-    
-    <!-- Основной контент - сюда подставляются страницы -->
     <main class="main-content">
       <router-view />
     </main>
-    
   </div>
 </template>
 
 <script setup lang="ts">
-/**
- * Импорты
- */
-import NavBar from '@/components/NavBar.vue'
+import AppHeader from '@/components/AppHeader.vue'
 import { useAuthStore } from '@/stores/auth'
 
-/**
- * Хранилище авторизации
- */
 const authStore = useAuthStore()
 
-/**
- * При загрузке приложения восстанавливаем сессию
- * из localStorage (если пользователь был залогинен)
- */
 authStore.restoreSession()
 </script>
 
 <style>
-/* ==========================================
-   ОСНОВНЫЕ СТИЛИ ПРИЛОЖЕНИЯ
-   ========================================== */
-
-/* Контейнер приложения */
 .app {
-  min-height: 100vh;      /* Минимальная высота = весь экран */
-  display: flex;          /* Flexbox для колоночного layout */
-  flex-direction: column; /* Элементы располагаются вертикально */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Основной контент (занимает всё оставшееся место) */
 .main-content {
-  flex: 1; /* Растягивается на всё свободное пространство */
+  flex: 1;
 }
 </style>

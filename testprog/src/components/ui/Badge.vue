@@ -1,13 +1,3 @@
-<!--
-  ==========================================
-  КОМПОНЕНТ БЕЙДЖА (Badge.vue)
-  ==========================================
-  
-  Метка/тег для отображения статуса:
-  - Разные цвета
-  - Размеры
--->
-
 <template>
   <span 
     class="badge" 
@@ -19,15 +9,9 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Пропсы компонента
- */
 interface Props {
-  /** Вариант цвета */
   variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'neutral'
-  /** Размер */
   size?: 'sm' | 'md'
-  /** Иконка */
   icon?: string
 }
 
@@ -39,10 +23,6 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <style scoped>
-/* ==========================================
-   БАЗОВЫЕ СТИЛИ
-   ========================================== */
-
 .badge {
   display: inline-flex;
   align-items: center;
@@ -50,10 +30,6 @@ withDefaults(defineProps<Props>(), {
   font-weight: 500;
   border-radius: 8px;
 }
-
-/* ==========================================
-   РАЗМЕРЫ
-   ========================================== */
 
 .badge-sm {
   padding: 0.2rem 0.5rem;
@@ -64,10 +40,6 @@ withDefaults(defineProps<Props>(), {
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;
 }
-
-/* ==========================================
-   ВАРИАНТЫ ЦВЕТОВ
-   ========================================== */
 
 .badge-primary {
   background: rgba(99, 102, 241, 0.15);
@@ -99,7 +71,4 @@ withDefaults(defineProps<Props>(), {
   color: var(--color-text-muted);
 }
 </style>
-
-
-
 

@@ -1,11 +1,3 @@
-<!--
-  ==========================================
-  КОМПОНЕНТ СПИННЕРА (Spinner.vue)
-  ==========================================
-  
-  Индикатор загрузки
--->
-
 <template>
   <div class="spinner-container" :class="{ 'spinner-fullscreen': fullscreen }">
     <div class="spinner" :class="`spinner-${size}`"></div>
@@ -14,15 +6,9 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Пропсы компонента
- */
 interface Props {
-  /** Размер */
   size?: 'sm' | 'md' | 'lg'
-  /** Текст под спиннером */
   text?: string
-  /** На весь экран */
   fullscreen?: boolean
 }
 
@@ -34,10 +20,6 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <style scoped>
-/* ==========================================
-   КОНТЕЙНЕР
-   ========================================== */
-
 .spinner-container {
   display: flex;
   flex-direction: column;
@@ -56,10 +38,6 @@ withDefaults(defineProps<Props>(), {
   z-index: 9999;
 }
 
-/* ==========================================
-   СПИННЕР
-   ========================================== */
-
 .spinner {
   border: 3px solid var(--color-border);
   border-top-color: var(--color-primary);
@@ -67,7 +45,6 @@ withDefaults(defineProps<Props>(), {
   animation: spin 1s linear infinite;
 }
 
-/* Размеры */
 .spinner-sm {
   width: 24px;
   height: 24px;
@@ -83,14 +60,9 @@ withDefaults(defineProps<Props>(), {
   height: 56px;
 }
 
-/* Анимация */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
-/* ==========================================
-   ТЕКСТ
-   ========================================== */
 
 .spinner-text {
   color: var(--color-text-muted);
@@ -101,7 +73,4 @@ withDefaults(defineProps<Props>(), {
   color: white;
 }
 </style>
-
-
-
 

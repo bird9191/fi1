@@ -1,14 +1,3 @@
-<!--
-  ==========================================
-  КОМПОНЕНТ КНОПКИ (Button.vue)
-  ==========================================
-  
-  Универсальная кнопка с вариантами:
-  - primary, outline, danger, text
-  - размеры: sm, md, lg
-  - состояния: loading, disabled
--->
-
 <template>
   <button
     :class="[
@@ -20,13 +9,10 @@
     :disabled="disabled || loading"
     :type="type"
   >
-    <!-- Индикатор загрузки -->
     <span v-if="loading" class="btn-spinner"></span>
     
-    <!-- Иконка слева -->
     <span v-if="icon && !loading" class="btn-icon">{{ icon }}</span>
     
-    <!-- Текст кнопки -->
     <span class="btn-text">
       <slot />
     </span>
@@ -34,23 +20,13 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Пропсы компонента
- */
 interface Props {
-  /** Вариант оформления */
   variant?: 'primary' | 'outline' | 'danger' | 'text' | 'success'
-  /** Размер кнопки */
   size?: 'sm' | 'md' | 'lg'
-  /** Тип HTML кнопки */
   type?: 'button' | 'submit' | 'reset'
-  /** Отключена */
   disabled?: boolean
-  /** Загрузка */
   loading?: boolean
-  /** На всю ширину */
   block?: boolean
-  /** Иконка слева */
   icon?: string
 }
 
@@ -66,10 +42,6 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <style scoped>
-/* ==========================================
-   БАЗОВЫЕ СТИЛИ КНОПКИ
-   ========================================== */
-
 .btn {
   display: inline-flex;
   align-items: center;
@@ -88,10 +60,6 @@ withDefaults(defineProps<Props>(), {
   cursor: not-allowed;
 }
 
-/* ==========================================
-   РАЗМЕРЫ
-   ========================================== */
-
 .btn-sm {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
@@ -107,11 +75,6 @@ withDefaults(defineProps<Props>(), {
   font-size: 1.1rem;
 }
 
-/* ==========================================
-   ВАРИАНТЫ
-   ========================================== */
-
-/* Primary */
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
   color: white;
@@ -122,7 +85,6 @@ withDefaults(defineProps<Props>(), {
   box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
 }
 
-/* Outline */
 .btn-outline {
   background: transparent;
   border: 1px solid var(--color-border);
@@ -134,7 +96,6 @@ withDefaults(defineProps<Props>(), {
   color: var(--color-primary);
 }
 
-/* Danger */
 .btn-danger {
   background: #ef4444;
   color: white;
@@ -144,7 +105,6 @@ withDefaults(defineProps<Props>(), {
   background: #dc2626;
 }
 
-/* Success */
 .btn-success {
   background: linear-gradient(135deg, #22c55e, #16a34a);
   color: white;
@@ -155,7 +115,6 @@ withDefaults(defineProps<Props>(), {
   box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
 }
 
-/* Text */
 .btn-text {
   background: transparent;
   color: var(--color-primary);
@@ -166,10 +125,6 @@ withDefaults(defineProps<Props>(), {
   text-decoration: underline;
 }
 
-/* ==========================================
-   МОДИФИКАТОРЫ
-   ========================================== */
-
 .btn-block {
   width: 100%;
 }
@@ -178,10 +133,6 @@ withDefaults(defineProps<Props>(), {
   position: relative;
   color: transparent;
 }
-
-/* ==========================================
-   СПИННЕР
-   ========================================== */
 
 .btn-spinner {
   position: absolute;
@@ -201,7 +152,4 @@ withDefaults(defineProps<Props>(), {
   color: white;
 }
 </style>
-
-
-
 

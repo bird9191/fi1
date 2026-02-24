@@ -1,19 +1,9 @@
-<!--
-  ==========================================
-  БОКОВАЯ ПАНЕЛЬ (Sidebar.vue)
-  ==========================================
-  
-  Переиспользуемая боковая панель с навигацией
--->
-
 <template>
   <aside class="sidebar">
-    <!-- Заголовок (необязательно) -->
     <div v-if="$slots.header" class="sidebar-header">
       <slot name="header" />
     </div>
     
-    <!-- Навигация -->
     <nav class="sidebar-nav">
       <button
         v-for="item in items"
@@ -28,7 +18,6 @@
       </button>
     </nav>
     
-    <!-- Футер (необязательно) -->
     <div v-if="$slots.footer" class="sidebar-footer">
       <slot name="footer" />
     </div>
@@ -36,9 +25,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Элемент навигации
- */
 export interface SidebarItem {
   id: string
   label: string
@@ -46,13 +32,8 @@ export interface SidebarItem {
   badge?: string | number
 }
 
-/**
- * Пропсы компонента
- */
 interface Props {
-  /** Текущий активный элемент */
   modelValue: string
-  /** Элементы навигации */
   items: SidebarItem[]
 }
 
@@ -151,7 +132,4 @@ defineEmits<{
   }
 }
 </style>
-
-
-
 

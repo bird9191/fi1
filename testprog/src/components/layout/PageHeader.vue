@@ -1,27 +1,15 @@
-<!--
-  ==========================================
-  ЗАГОЛОВОК СТРАНИЦЫ (PageHeader.vue)
-  ==========================================
-  
-  Переиспользуемый заголовок страницы
--->
-
 <template>
   <header class="page-header">
     <div class="header-content">
-      <!-- Кнопка назад -->
       <router-link v-if="backLink" :to="backLink" class="back-link">
         ← {{ backText }}
       </router-link>
       
-      <!-- Заголовок -->
       <h1 class="page-title">{{ title }}</h1>
       
-      <!-- Подзаголовок -->
       <p v-if="subtitle" class="page-subtitle">{{ subtitle }}</p>
     </div>
     
-    <!-- Действия справа -->
     <div v-if="$slots.actions" class="header-actions">
       <slot name="actions" />
     </div>
@@ -29,17 +17,10 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Пропсы компонента
- */
 interface Props {
-  /** Заголовок */
   title: string
-  /** Подзаголовок */
   subtitle?: string
-  /** Ссылка назад */
   backLink?: string
-  /** Текст кнопки назад */
   backText?: string
 }
 
@@ -102,7 +83,4 @@ withDefaults(defineProps<Props>(), {
   }
 }
 </style>
-
-
-
 
