@@ -1,16 +1,16 @@
 <template>
-  <header class="page-header">
-    <div class="header-content">
-      <router-link v-if="backLink" :to="backLink" class="back-link">
+  <header class="header">
+    <div class="content">
+      <router-link v-if="backLink" :to="backLink" class="back">
         ← {{ backText }}
       </router-link>
       
-      <h1 class="page-title">{{ title }}</h1>
+      <h1 class="title">{{ title }}</h1>
       
-      <p v-if="subtitle" class="page-subtitle">{{ subtitle }}</p>
+      <p v-if="subtitle" class="subtitle">{{ subtitle }}</p>
     </div>
     
-    <div v-if="$slots.actions" class="header-actions">
+    <div v-if="$slots.actions" class="actions">
       <slot name="actions" />
     </div>
   </header>
@@ -32,7 +32,7 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <style scoped>
-.page-header {
+.header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -40,11 +40,11 @@ withDefaults(defineProps<Props>(), {
   margin-bottom: 2rem;
 }
 
-.header-content {
+.content {
   flex: 1;
 }
 
-.back-link {
+.back {
   display: inline-block;
   color: var(--color-text-muted);
   text-decoration: none;
@@ -53,32 +53,32 @@ withDefaults(defineProps<Props>(), {
   transition: color 0.2s;
 }
 
-.back-link:hover {
+.back:hover {
   color: var(--color-primary);
 }
 
-.page-title {
+.title {
   font-size: 1.8rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
-.page-subtitle {
+.subtitle {
   color: var(--color-text-muted);
   font-size: 1rem;
 }
 
-.header-actions {
+.actions {
   display: flex;
   gap: 0.75rem;
 }
 
 @media (max-width: 600px) {
-  .page-header {
+  .header {
     flex-direction: column;
   }
   
-  .page-title {
+  .title {
     font-size: 1.5rem;
   }
 }

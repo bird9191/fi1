@@ -1,42 +1,112 @@
-# testprog
+# TestMaster
 
-This template should help get you started developing with Vue 3 in Vite.
+Платформа для создания и прохождения онлайн-тестов с удобной системой управления.
 
-## Recommended IDE Setup
+## О проекте
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+TestMaster - это веб-приложение для проведения тестирования и экзаменов. Поддерживает разные типы вопросов, режимы прохождения и статистику результатов.
 
-## Recommended Browser Setup
+### Возможности
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- Создание тестов с разными типами вопросов (один ответ, несколько, текстовый)
+- Два режима прохождения: тренировка и экзамен
+- Таймер и ограничение времени
+- Статистика и детальные результаты
+- Управление пользователями (админ-панель)
+- Темная и светлая тема
 
-## Type Support for `.vue` Imports in TS
+## Технологии
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+**Frontend:**
+- Vue 3 + TypeScript
+- Pinia (управление состоянием)
+- Vue Router
+- Vite
 
-## Customize configuration
+**Backend:**
+- Node.js + Express
+- Prisma ORM
+- PostgreSQL
+- JWT авторизация
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## Установка
 
-## Project Setup
+### Требования
 
-```sh
+- Node.js 18+
+- PostgreSQL 14+
+
+### Фронтенд
+
+```bash
+cd testprog
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+Приложение будет доступно по адресу `http://localhost:5173`
 
-```sh
-npm run build
+### Бэкенд
+
+```bash
+cd testprog/server
+npm install
+npm run dev
 ```
+
+API будет доступно по адресу `http://localhost:3001`
+
+## Структура проекта
+
+```
+testprog/
+├── src/
+│   ├── components/     # Компоненты
+│   ├── views/          # Страницы
+│   ├── stores/         # Хранилища Pinia
+│   ├── composables/    # Переиспользуемая логика
+│   ├── router/         # Роутинг
+│   ├── services/       # API сервис
+│   └── utils/          # Утилиты
+├── server/
+│   ├── routes/         # API роуты
+│   ├── middleware/     # Middleware
+│   ├── prisma/         # Схема БД
+│   └── services/       # Бизнес-логика
+└── public/             # Статика
+```
+
+## Роли пользователей
+
+- **Студент** - проходит тесты, смотрит результаты
+- **Учитель** - создает тесты, смотрит статистику студентов
+- **Админ** - управляет пользователями и системой
+
+## Разработка
+
+```bash
+npm run dev          # Запуск dev сервера
+npm run build        # Сборка для продакшена
+npm run type-check   # Проверка типов
+```
+
+## База данных
+
+Настройка подключения в файле `server/.env`:
+
+```
+DATABASE_URL="postgresql://user:password@localhost:5432/testmaster"
+JWT_SECRET="your-secret-key"
+```
+
+Применение миграций:
+
+```bash
+cd server
+npx prisma migrate dev
+npx prisma db seed
+```
+
+## Лицензия
+
+MIT

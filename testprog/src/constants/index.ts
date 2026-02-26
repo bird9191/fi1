@@ -1,13 +1,3 @@
-/**
- * ==========================================
- * КОНСТАНТЫ ПРИЛОЖЕНИЯ (constants/index.ts)
- * ==========================================
- */
-
-// ==========================================
-// РОЛИ ПОЛЬЗОВАТЕЛЕЙ
-// ==========================================
-
 export const ROLES = {
   STUDENT: 'student',
   TEACHER: 'teacher',
@@ -20,10 +10,6 @@ export const ROLE_NAMES: Record<string, string> = {
   admin: 'Администратор'
 }
 
-// ==========================================
-// ТИПЫ ТЕСТОВ
-// ==========================================
-
 export const TEST_TYPES = {
   TEST: 'test',
   EXAM: 'exam'
@@ -33,10 +19,6 @@ export const TEST_TYPE_NAMES: Record<string, string> = {
   test: 'Тест',
   exam: 'Экзамен'
 }
-
-// ==========================================
-// ТИПЫ ВОПРОСОВ
-// ==========================================
 
 export const QUESTION_TYPES = {
   SINGLE: 'single',
@@ -50,10 +32,6 @@ export const QUESTION_TYPE_NAMES: Record<string, string> = {
   text: 'Текстовый ответ'
 }
 
-// ==========================================
-// СЛОЖНОСТЬ
-// ==========================================
-
 export const DIFFICULTY_LEVELS = {
   EASY: 'easy',
   MEDIUM: 'medium',
@@ -65,10 +43,6 @@ export const DIFFICULTY_NAMES: Record<string, string> = {
   medium: 'Средний',
   hard: 'Сложный'
 }
-
-// ==========================================
-// ВИДИМОСТЬ ТЕСТОВ
-// ==========================================
 
 export const VISIBILITY = {
   PUBLIC: 'public',
@@ -82,10 +56,6 @@ export const VISIBILITY_NAMES: Record<string, string> = {
   link: 'По ссылке'
 }
 
-// ==========================================
-// НАСТРОЙКИ ПО УМОЛЧАНИЮ
-// ==========================================
-
 export const DEFAULT_SETTINGS = {
   PASSING_SCORE: 60,
   MAX_ATTEMPTS: 0,
@@ -93,25 +63,13 @@ export const DEFAULT_SETTINGS = {
   QUESTIONS_PER_PAGE: 1
 }
 
-// ==========================================
-// ПАГИНАЦИЯ
-// ==========================================
-
 export const PAGINATION = {
   DEFAULT_PAGE: 1,
   DEFAULT_LIMIT: 20,
   MAX_LIMIT: 100
 }
 
-// ==========================================
-// API
-// ==========================================
-
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
-
-// ==========================================
-// ЛОКАЛЬНОЕ ХРАНИЛИЩЕ
-// ==========================================
 
 export const STORAGE_KEYS = {
   TOKEN: 'token',
@@ -119,20 +77,12 @@ export const STORAGE_KEYS = {
   THEME: 'theme-dark'
 }
 
-// ==========================================
-// ЦВЕТА СТАТУСОВ
-// ==========================================
-
 export const STATUS_COLORS = {
   success: '#22c55e',
   warning: '#fbbf24',
   error: '#ef4444',
   info: '#3b82f6'
 }
-
-// ==========================================
-// МАРШРУТЫ
-// ==========================================
 
 export const ROUTES = {
   HOME: '/',
@@ -144,8 +94,3 @@ export const ROUTES = {
   ADMIN: '/admin',
   RESULTS: '/results'
 }
-
-
-
-
-

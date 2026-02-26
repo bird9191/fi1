@@ -1,21 +1,8 @@
-<!--
-  ==========================================
-  ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ (ProfileView.vue)
-  ==========================================
-  
-  Страница настроек профиля:
-  - Личные данные (имя, email, телефон)
-  - Смена пароля
-  - Двухфакторная аутентификация
-  - Удаление аккаунта
--->
+
 
 <template>
   <div class="profile-page">
-    
-    <!-- ==========================================
-         БОКОВАЯ ПАНЕЛЬ
-         ========================================== -->
+
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="avatar">
@@ -27,7 +14,6 @@
         </span>
       </div>
 
-      <!-- Навигация по секциям -->
       <nav class="sidebar-nav">
         <button
           v-for="tab in tabs"
@@ -42,19 +28,13 @@
       </nav>
     </aside>
 
-    <!-- ==========================================
-         ОСНОВНОЙ КОНТЕНТ
-         ========================================== -->
     <main class="content">
-      
-      <!-- ==========================================
-           ЛИЧНЫЕ ДАННЫЕ
-           ========================================== -->
+
       <section v-if="activeTab === 'personal'" class="section">
-        <h1>👤 Личные данные</h1>
+        <h1> Личные данные</h1>
         
         <form @submit.prevent="savePersonalData" class="form-card">
-          <!-- Имя -->
+          
           <div class="form-group">
             <label for="name">Имя</label>
             <input
@@ -65,7 +45,6 @@
             />
           </div>
 
-          <!-- Email -->
           <div class="form-group">
             <label for="email">Email</label>
             <input
@@ -75,11 +54,10 @@
               required
             />
             <span v-if="authStore.currentUser?.emailVerified" class="verified">
-              ✓ Подтверждён
+               Подтверждён
             </span>
           </div>
 
-          <!-- Телефон -->
           <div class="form-group">
             <label for="phone">Телефон</label>
             <input
@@ -91,18 +69,14 @@
           </div>
 
           <button type="submit" class="btn btn-primary" :disabled="isSaving">
-            {{ isSaving ? '⏳ Сохранение...' : '💾 Сохранить' }}
+            {{ isSaving ? ' Сохранение...' : ' Сохранить' }}
           </button>
         </form>
       </section>
 
-      <!-- ==========================================
-           БЕЗОПАСНОСТЬ
-           ========================================== -->
       <section v-else-if="activeTab === 'security'" class="section">
-        <h1>🔒 Безопасность</h1>
-        
-        <!-- Смена пароля -->
+        <h1> Безопасность</h1>
+
         <div class="form-card">
           <h3>Смена пароля</h3>
           
@@ -139,12 +113,11 @@
             </div>
 
             <button type="submit" class="btn btn-primary" :disabled="isChangingPassword">
-              {{ isChangingPassword ? '⏳ Изменение...' : '🔑 Изменить пароль' }}
+              {{ isChangingPassword ? ' Изменение...' : ' Изменить пароль' }}
             </button>
           </form>
         </div>
 
-        <!-- 2FA -->
         <div class="form-card">
           <h3>Двухфакторная аутентификация</h3>
           <p class="description">
@@ -152,7 +125,7 @@
           </p>
           
           <div class="twofa-status" :class="{ enabled: is2FAEnabled }">
-            <span class="status-icon">{{ is2FAEnabled ? '✅' : '❌' }}</span>
+            <span class="status-icon">{{ is2FAEnabled ? '' : '' }}</span>
             <span>{{ is2FAEnabled ? 'Включена' : 'Выключена' }}</span>
           </div>
 
@@ -161,19 +134,16 @@
             class="btn"
             :class="is2FAEnabled ? 'btn-outline' : 'btn-primary'"
           >
-            {{ is2FAEnabled ? '🔓 Отключить' : '🔐 Включить' }}
+            {{ is2FAEnabled ? ' Отключить' : ' Включить' }}
           </button>
         </div>
       </section>
 
-      <!-- ==========================================
-           УДАЛЕНИЕ АККАУНТА
-           ========================================== -->
       <section v-else-if="activeTab === 'danger'" class="section">
-        <h1>⚠️ Опасная зона</h1>
+        <h1> Опасная зона</h1>
         
         <div class="form-card danger-zone">
-          <h3>🗑️ Удаление аккаунта</h3>
+          <h3> Удаление аккаунта</h3>
           <p class="description">
             Это действие нельзя отменить. Все ваши данные будут удалены навсегда.
           </p>
@@ -190,76 +160,45 @@
 </template>
 
 <script setup lang="ts">
-/**
- * ==========================================
- * ЛОГИКА ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ
- * ==========================================
- */
 
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
-// ==========================================
-// ХРАНИЛИЩА И РОУТЕР
-// ==========================================
-
 const router = useRouter()
 const authStore = useAuthStore()
 
-// ==========================================
-// ВКЛАДКИ
-// ==========================================
-
 const tabs = [
-  { id: 'personal', icon: '👤', label: 'Личные данные' },
-  { id: 'security', icon: '🔒', label: 'Безопасность' },
-  { id: 'danger', icon: '⚠️', label: 'Опасная зона' }
+  { id: 'personal', icon: '', label: 'Личные данные' },
+  { id: 'security', icon: '', label: 'Безопасность' },
+  { id: 'danger', icon: '', label: 'Опасная зона' }
 ]
 
 const activeTab = ref('personal')
 
-// ==========================================
-// СОСТОЯНИЕ
-// ==========================================
-
-/** Загрузка данных */
 const isSaving = ref(false)
 const isChangingPassword = ref(false)
 
-/** Включена ли 2FA */
 const is2FAEnabled = ref(false)
 
-// ==========================================
-// ФОРМЫ
-// ==========================================
-
-/** Форма личных данных */
 const personalForm = reactive({
   name: '',
   email: '',
   phone: ''
 })
 
-/** Форма смены пароля */
 const passwordForm = reactive({
   currentPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
 
-// ==========================================
-// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
-// ==========================================
-
-/** Инициалы пользователя */
 const userInitials = computed(() => {
   const name = authStore.currentUser?.name || ''
   return name.charAt(0).toUpperCase()
 })
 
-/** Название роли */
 const roleName = computed(() => {
   const roles: Record<string, string> = {
     student: 'Студент',
@@ -269,13 +208,6 @@ const roleName = computed(() => {
   return roles[authStore.currentUser?.role || 'student']
 })
 
-// ==========================================
-// МЕТОДЫ
-// ==========================================
-
-/**
- * Сохраняет личные данные
- */
 async function savePersonalData(): Promise<void> {
   if (isSaving.value) return
   
@@ -287,27 +219,24 @@ async function savePersonalData(): Promise<void> {
       email: personalForm.email,
       phone: personalForm.phone
     })
-    alert('✅ Данные сохранены!')
+    alert(' Данные сохранены!')
   } catch (error) {
     console.error('Ошибка сохранения:', error)
-    alert('❌ Ошибка при сохранении данных')
+    alert(' Ошибка при сохранении данных')
   } finally {
     isSaving.value = false
   }
 }
 
-/**
- * Меняет пароль
- */
 async function changePassword(): Promise<void> {
-  // Проверяем совпадение паролей
+  
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    alert('❌ Пароли не совпадают')
+    alert(' Пароли не совпадают')
     return
   }
   
   if (passwordForm.newPassword.length < 6) {
-    alert('❌ Пароль должен быть не менее 6 символов')
+    alert(' Пароль должен быть не менее 6 символов')
     return
   }
   
@@ -318,47 +247,40 @@ async function changePassword(): Promise<void> {
       passwordForm.currentPassword,
       passwordForm.newPassword
     )
-    
-    // Очищаем форму
+
     passwordForm.currentPassword = ''
     passwordForm.newPassword = ''
     passwordForm.confirmPassword = ''
     
-    alert('✅ Пароль успешно изменён!')
+    alert(' Пароль успешно изменён!')
   } catch (error) {
     console.error('Ошибка смены пароля:', error)
-    alert('❌ Неверный текущий пароль')
+    alert(' Неверный текущий пароль')
   } finally {
     isChangingPassword.value = false
   }
 }
 
-/**
- * Переключает 2FA
- */
 async function toggle2FA(): Promise<void> {
   try {
     if (is2FAEnabled.value) {
       await api.disable2FA()
       is2FAEnabled.value = false
-      alert('✅ 2FA отключена')
+      alert(' 2FA отключена')
     } else {
       await api.enable2FA()
       is2FAEnabled.value = true
-      alert('✅ 2FA включена')
+      alert(' 2FA включена')
     }
   } catch (error) {
     console.error('Ошибка 2FA:', error)
-    alert('❌ Ошибка при настройке 2FA')
+    alert(' Ошибка при настройке 2FA')
   }
 }
 
-/**
- * Подтверждение удаления аккаунта
- */
 async function confirmDeleteAccount(): Promise<void> {
   const confirmed = confirm(
-    '⚠️ Вы уверены, что хотите удалить аккаунт?\n\n' +
+    ' Вы уверены, что хотите удалить аккаунт?\n\n' +
     'Это действие нельзя отменить!'
   )
   
@@ -368,14 +290,11 @@ async function confirmDeleteAccount(): Promise<void> {
       router.push('/')
     } catch (error) {
       console.error('Ошибка удаления:', error)
-      alert('❌ Ошибка при удалении аккаунта')
+      alert(' Ошибка при удалении аккаунта')
     }
   }
 }
 
-/**
- * Загружает данные профиля
- */
 function loadProfileData(): void {
   if (authStore.currentUser) {
     personalForm.name = authStore.currentUser.name
@@ -385,19 +304,12 @@ function loadProfileData(): void {
   }
 }
 
-// ==========================================
-// ЖИЗНЕННЫЙ ЦИКЛ
-// ==========================================
-
 onMounted(() => {
   loadProfileData()
 })
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ ПРОФИЛЯ
-   ========================================== */
 
 .profile-page {
   display: grid;
@@ -407,10 +319,6 @@ onMounted(() => {
   max-width: 1100px;
   margin: 0 auto;
 }
-
-/* ==========================================
-   БОКОВАЯ ПАНЕЛЬ
-   ========================================== */
 
 .sidebar {
   background: var(--color-surface);
@@ -470,7 +378,6 @@ onMounted(() => {
   color: #f87171;
 }
 
-/* Навигация */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -506,10 +413,6 @@ onMounted(() => {
   font-size: 1.1rem;
 }
 
-/* ==========================================
-   ОСНОВНОЙ КОНТЕНТ
-   ========================================== */
-
 .content {
   min-height: 400px;
 }
@@ -518,10 +421,6 @@ onMounted(() => {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
 }
-
-/* ==========================================
-   КАРТОЧКА ФОРМЫ
-   ========================================== */
 
 .form-card {
   background: var(--color-surface);
@@ -542,7 +441,6 @@ onMounted(() => {
   margin-bottom: 1.25rem;
 }
 
-/* Поля формы */
 .form-group {
   margin-bottom: 1rem;
   position: relative;
@@ -578,10 +476,6 @@ onMounted(() => {
   color: #4ade80;
 }
 
-/* ==========================================
-   2FA
-   ========================================== */
-
 .twofa-status {
   display: flex;
   align-items: center;
@@ -601,10 +495,6 @@ onMounted(() => {
   font-size: 1.2rem;
 }
 
-/* ==========================================
-   ОПАСНАЯ ЗОНА
-   ========================================== */
-
 .danger-zone {
   border-color: rgba(239, 68, 68, 0.3);
 }
@@ -622,10 +512,6 @@ onMounted(() => {
 .btn-danger:hover {
   background: #dc2626;
 }
-
-/* ==========================================
-   АДАПТИВНОСТЬ
-   ========================================== */
 
 @media (max-width: 768px) {
   .profile-page {

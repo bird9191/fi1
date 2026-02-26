@@ -1,30 +1,16 @@
-<!--
-  ==========================================
-  ВОССТАНОВЛЕНИЕ ПАРОЛЯ (ForgotPasswordView.vue)
-  ==========================================
-  
-  Страница запроса сброса пароля:
-  - Ввод email
-  - Отправка ссылки для сброса
--->
+
 
 <template>
   <div class="auth-page">
     <div class="auth-card">
-      
-      <!-- ==========================================
-           ЗАГОЛОВОК
-           ========================================== -->
+
       <div class="auth-header">
-        <h1>🔐 Восстановление пароля</h1>
+        <h1> Восстановление пароля</h1>
         <p>Введите email для получения ссылки сброса</p>
       </div>
 
-      <!-- ==========================================
-           УСПЕШНАЯ ОТПРАВКА
-           ========================================== -->
       <div v-if="isSuccess" class="success-message">
-        <div class="success-icon">✉️</div>
+        <div class="success-icon"></div>
         <h2>Письмо отправлено!</h2>
         <p>
           Мы отправили ссылку для сброса пароля на адрес 
@@ -38,12 +24,8 @@
         </router-link>
       </div>
 
-      <!-- ==========================================
-           ФОРМА
-           ========================================== -->
       <form v-else @submit.prevent="handleSubmit" class="auth-form">
-        
-        <!-- Поле Email -->
+
         <div class="form-group">
           <label for="email">Email</label>
           <input
@@ -56,17 +38,14 @@
           />
         </div>
 
-        <!-- Ошибка -->
         <div v-if="errorMessage" class="error-message">
           {{ errorMessage }}
         </div>
 
-        <!-- Кнопка отправки -->
         <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
-          {{ isLoading ? '⏳ Отправка...' : '📤 Отправить ссылку' }}
+          {{ isLoading ? ' Отправка...' : ' Отправить ссылку' }}
         </button>
 
-        <!-- Ссылка назад -->
         <div class="auth-footer">
           <router-link to="/login">← Вернуться ко входу</router-link>
         </div>
@@ -78,38 +57,18 @@
 </template>
 
 <script setup lang="ts">
-/**
- * ==========================================
- * ЛОГИКА ВОССТАНОВЛЕНИЯ ПАРОЛЯ
- * ==========================================
- */
 
 import { ref } from 'vue'
 import api from '@/services/api'
 
-// ==========================================
-// СОСТОЯНИЕ
-// ==========================================
-
-/** Email пользователя */
 const email = ref('')
 
-/** Флаг загрузки */
 const isLoading = ref(false)
 
-/** Флаг успешной отправки */
 const isSuccess = ref(false)
 
-/** Сообщение об ошибке */
 const errorMessage = ref('')
 
-// ==========================================
-// МЕТОДЫ
-// ==========================================
-
-/**
- * Отправляет запрос на сброс пароля
- */
 async function handleSubmit(): Promise<void> {
   if (!email.value || isLoading.value) return
   
@@ -121,8 +80,7 @@ async function handleSubmit(): Promise<void> {
     isSuccess.value = true
   } catch (error: any) {
     console.error('Ошибка отправки:', error)
-    
-    // Показываем ошибку
+
     if (error.response?.status === 404) {
       errorMessage.value = 'Пользователь с таким email не найден'
     } else {
@@ -135,9 +93,6 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ ВОССТАНОВЛЕНИЯ ПАРОЛЯ
-   ========================================== */
 
 .auth-page {
   min-height: calc(100vh - 60px);
@@ -156,10 +111,6 @@ async function handleSubmit(): Promise<void> {
   max-width: 420px;
 }
 
-/* ==========================================
-   ЗАГОЛОВОК
-   ========================================== */
-
 .auth-header {
   text-align: center;
   margin-bottom: 2rem;
@@ -174,10 +125,6 @@ async function handleSubmit(): Promise<void> {
   color: var(--color-text-muted);
   font-size: 0.95rem;
 }
-
-/* ==========================================
-   УСПЕШНАЯ ОТПРАВКА
-   ========================================== */
 
 .success-message {
   text-align: center;
@@ -204,10 +151,6 @@ async function handleSubmit(): Promise<void> {
   font-size: 0.85rem;
   margin-bottom: 1.5rem;
 }
-
-/* ==========================================
-   ФОРМА
-   ========================================== */
 
 .form-group {
   margin-bottom: 1.25rem;
@@ -236,7 +179,6 @@ async function handleSubmit(): Promise<void> {
   border-color: var(--color-primary);
 }
 
-/* Ошибка */
 .error-message {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
@@ -247,12 +189,10 @@ async function handleSubmit(): Promise<void> {
   margin-bottom: 1rem;
 }
 
-/* Кнопка */
 .btn-block {
   width: 100%;
 }
 
-/* Футер */
 .auth-footer {
   text-align: center;
   margin-top: 1.5rem;

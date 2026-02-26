@@ -1,37 +1,12 @@
-/**
- * ==========================================
- * ВАЛИДАТОРЫ (validators.ts)
- * ==========================================
- * 
- * Функции для валидации данных
- */
-
-// ==========================================
-// EMAIL
-// ==========================================
-
-/**
- * Проверяет корректность email
- */
 export function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
 
-// ==========================================
-// ПАРОЛЬ
-// ==========================================
-
-/**
- * Проверяет минимальную длину пароля
- */
 export function isValidPassword(password: string, minLength: number = 6): boolean {
   return password.length >= minLength
 }
 
-/**
- * Проверяет надёжность пароля
- */
 export function getPasswordStrength(password: string): {
   score: number
   label: string
@@ -51,21 +26,11 @@ export function getPasswordStrength(password: string): {
   return { score, label: 'Сильный', color: '#22c55e' }
 }
 
-// ==========================================
-// ТЕЛЕФОН
-// ==========================================
-
-/**
- * Проверяет корректность телефона
- */
 export function isValidPhone(phone: string): boolean {
   const phoneRegex = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/
   return phoneRegex.test(phone.replace(/\s/g, ''))
 }
 
-/**
- * Форматирует телефон
- */
 export function formatPhone(phone: string): string {
   const cleaned = phone.replace(/\D/g, '')
   
@@ -80,48 +45,26 @@ export function formatPhone(phone: string): string {
   return phone
 }
 
-// ==========================================
-// ОБЩИЕ
-// ==========================================
-
-/**
- * Проверяет, что строка не пустая
- */
 export function isNotEmpty(value: string): boolean {
   return value.trim().length > 0
 }
 
-/**
- * Проверяет минимальную длину
- */
 export function hasMinLength(value: string, min: number): boolean {
   return value.length >= min
 }
 
-/**
- * Проверяет максимальную длину
- */
 export function hasMaxLength(value: string, max: number): boolean {
   return value.length <= max
 }
 
-/**
- * Проверяет, что значение в диапазоне
- */
 export function isInRange(value: number, min: number, max: number): boolean {
   return value >= min && value <= max
 }
 
-/**
- * Проверяет, что это число
- */
 export function isNumeric(value: string): boolean {
   return /^\d+$/.test(value)
 }
 
-/**
- * Проверяет URL
- */
 export function isValidUrl(url: string): boolean {
   try {
     new URL(url)
@@ -130,8 +73,3 @@ export function isValidUrl(url: string): boolean {
     return false
   }
 }
-
-
-
-
-

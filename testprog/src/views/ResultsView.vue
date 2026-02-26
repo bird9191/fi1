@@ -1,50 +1,28 @@
-<!--
-  ==========================================
-  ИСТОРИЯ РЕЗУЛЬТАТОВ (ResultsView.vue)
-  ==========================================
-  
-  Страница со списком результатов пройденных тестов:
-  - Таблица с результатами
-  - Фильтрация и сортировка
-  - Переход к деталям
--->
+
 
 <template>
   <div class="results-page">
-    
-    <!-- ==========================================
-         ЗАГОЛОВОК
-         ========================================== -->
+
     <header class="page-header">
-      <h1>📊 Мои результаты</h1>
+      <h1> Мои результаты</h1>
       <p>История всех пройденных тестов и экзаменов</p>
     </header>
 
-    <!-- ==========================================
-         СОСТОЯНИЕ ЗАГРУЗКИ
-         ========================================== -->
     <div v-if="isLoading" class="loading">
       <div class="spinner"></div>
       <p>Загрузка результатов...</p>
     </div>
 
-    <!-- ==========================================
-         ПУСТОЕ СОСТОЯНИЕ
-         ========================================== -->
     <div v-else-if="results.length === 0" class="empty-state">
-      <h3>📝 Нет результатов</h3>
+      <h3> Нет результатов</h3>
       <p>Вы ещё не прошли ни одного теста</p>
       <router-link to="/tests" class="btn btn-primary">
-        🎯 Пройти тест
+         Пройти тест
       </router-link>
     </div>
 
-    <!-- ==========================================
-         СПИСОК РЕЗУЛЬТАТОВ
-         ========================================== -->
     <div v-else class="results-list">
-      
-      <!-- Статистика -->
+
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-value">{{ results.length }}</div>
@@ -60,7 +38,6 @@
         </div>
       </div>
 
-      <!-- Таблица результатов -->
       <div class="results-table-wrapper">
         <table class="results-table">
           <thead>
@@ -75,38 +52,33 @@
           </thead>
           <tbody>
             <tr v-for="result in results" :key="result.id">
-              <!-- Название теста -->
+              
               <td class="test-name">
                 {{ result.testTitle }}
               </td>
-              
-              <!-- Тип -->
+
               <td>
                 <span class="type-badge" :class="result.testType || 'test'">
                   {{ result.testType === 'exam' ? 'Экзамен' : 'Тест' }}
                 </span>
               </td>
-              
-              <!-- Дата -->
+
               <td class="date">
                 {{ formatDate(result.completedAt) }}
               </td>
-              
-              <!-- Результат -->
+
               <td>
                 <span class="score" :class="getScoreClass(result.score)">
                   {{ result.score }}%
                 </span>
               </td>
-              
-              <!-- Статус -->
+
               <td>
                 <span class="status" :class="{ passed: result.passed }">
-                  {{ result.passed ? '✓ Сдано' : '✗ Не сдано' }}
+                  {{ result.passed ? ' Сдано' : ' Не сдано' }}
                 </span>
               </td>
-              
-              <!-- Действия -->
+
               <td class="actions">
                 <router-link 
                   :to="`/results/${result.id}`" 
@@ -126,18 +98,9 @@
 </template>
 
 <script setup lang="ts">
-/**
- * ==========================================
- * ЛОГИКА ИСТОРИИ РЕЗУЛЬТАТОВ
- * ==========================================
- */
 
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
-
-// ==========================================
-// ИНТЕРФЕЙСЫ
-// ==========================================
 
 interface TestResult {
   id: string
@@ -149,39 +112,20 @@ interface TestResult {
   completedAt: string
 }
 
-// ==========================================
-// СОСТОЯНИЕ
-// ==========================================
-
-/** Флаг загрузки */
 const isLoading = ref(true)
 
-/** Список результатов */
 const results = ref<TestResult[]>([])
 
-// ==========================================
-// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
-// ==========================================
-
-/** Средний балл */
 const averageScore = computed(() => {
   if (results.value.length === 0) return 0
   const sum = results.value.reduce((acc, r) => acc + r.score, 0)
   return Math.round(sum / results.value.length)
 })
 
-/** Количество пройденных */
 const passedCount = computed(() => 
   results.value.filter(r => r.passed).length
 )
 
-// ==========================================
-// МЕТОДЫ
-// ==========================================
-
-/**
- * Форматирует дату
- */
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
   return date.toLocaleDateString('ru-RU', {
@@ -193,9 +137,6 @@ function formatDate(dateString: string): string {
   })
 }
 
-/**
- * Возвращает класс для результата
- */
 function getScoreClass(score: number): string {
   if (score >= 80) return 'excellent'
   if (score >= 60) return 'good'
@@ -203,9 +144,6 @@ function getScoreClass(score: number): string {
   return 'poor'
 }
 
-/**
- * Загружает результаты
- */
 async function loadResults(): Promise<void> {
   isLoading.value = true
   
@@ -220,29 +158,18 @@ async function loadResults(): Promise<void> {
   }
 }
 
-// ==========================================
-// ЖИЗНЕННЫЙ ЦИКЛ
-// ==========================================
-
 onMounted(() => {
   loadResults()
 })
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ ИСТОРИИ РЕЗУЛЬТАТОВ
-   ========================================== */
 
 .results-page {
   padding: 2rem;
   max-width: 1000px;
   margin: 0 auto;
 }
-
-/* ==========================================
-   ЗАГОЛОВОК
-   ========================================== */
 
 .page-header {
   margin-bottom: 2rem;
@@ -256,10 +183,6 @@ onMounted(() => {
 .page-header p {
   color: var(--color-text-muted);
 }
-
-/* ==========================================
-   СОСТОЯНИЯ
-   ========================================== */
 
 .loading {
   display: flex;
@@ -300,10 +223,6 @@ onMounted(() => {
   margin-bottom: 1.5rem;
 }
 
-/* ==========================================
-   СТАТИСТИКА
-   ========================================== */
-
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -330,10 +249,6 @@ onMounted(() => {
   color: var(--color-text-muted);
   margin-top: 0.25rem;
 }
-
-/* ==========================================
-   ТАБЛИЦА
-   ========================================== */
 
 .results-table-wrapper {
   background: var(--color-surface);
@@ -373,7 +288,6 @@ onMounted(() => {
   background: var(--color-background);
 }
 
-/* Название теста */
 .test-name {
   font-weight: 500;
   max-width: 200px;
@@ -382,7 +296,6 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* Бейдж типа */
 .type-badge {
   font-size: 0.75rem;
   padding: 0.25rem 0.6rem;
@@ -399,13 +312,11 @@ onMounted(() => {
   color: #a78bfa;
 }
 
-/* Дата */
 .date {
   font-size: 0.9rem;
   color: var(--color-text-muted);
 }
 
-/* Результат */
 .score {
   font-weight: 600;
   padding: 0.25rem 0.6rem;
@@ -432,7 +343,6 @@ onMounted(() => {
   color: #f87171;
 }
 
-/* Статус */
 .status {
   font-size: 0.85rem;
   color: #f87171;
@@ -442,7 +352,6 @@ onMounted(() => {
   color: #4ade80;
 }
 
-/* Действия */
 .actions {
   text-align: right;
 }
@@ -451,10 +360,6 @@ onMounted(() => {
   padding: 0.4rem 0.8rem;
   font-size: 0.85rem;
 }
-
-/* ==========================================
-   АДАПТИВНОСТЬ
-   ========================================== */
 
 @media (max-width: 768px) {
   .stats-row {

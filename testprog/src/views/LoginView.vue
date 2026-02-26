@@ -1,32 +1,16 @@
-<!--
-  ==========================================
-  СТРАНИЦА ВХОДА (LoginView.vue)
-  ==========================================
-  
-  Форма авторизации пользователя:
-  - Поля email и пароль
-  - Ссылка на восстановление пароля
-  - Ссылка на регистрацию
--->
+
 
 <template>
   <div class="auth-page">
     <div class="auth-card">
-      
-      <!-- ==========================================
-           ЗАГОЛОВОК
-           ========================================== -->
+
       <div class="auth-header">
         <h1>Вход в аккаунт</h1>
         <p>Введите свои данные для входа</p>
       </div>
 
-      <!-- ==========================================
-           ФОРМА ВХОДА
-           ========================================== -->
       <form @submit.prevent="handleLogin" class="auth-form">
-        
-        <!-- Поле Email -->
+
         <div class="form-group">
           <label for="email">Email</label>
           <input
@@ -39,7 +23,6 @@
           />
         </div>
 
-        <!-- Поле Пароль -->
         <div class="form-group">
           <label for="password">Пароль</label>
           <input
@@ -50,19 +33,16 @@
             required
             autocomplete="current-password"
           />
-          
-          <!-- Ссылка на восстановление пароля -->
+
           <router-link to="/forgot-password" class="forgot-link">
             Забыли пароль?
           </router-link>
         </div>
 
-        <!-- Сообщение об ошибке -->
         <div v-if="authStore.error" class="error-message">
           {{ authStore.error }}
         </div>
 
-        <!-- Кнопка входа -->
         <button 
           type="submit" 
           class="btn btn-primary btn-block" 
@@ -74,9 +54,6 @@
         
       </form>
 
-      <!-- ==========================================
-           ФУТЕР (ссылка на регистрацию)
-           ========================================== -->
       <div class="auth-footer">
         <p>Нет аккаунта? <router-link to="/register">Зарегистрироваться</router-link></p>
       </div>
@@ -86,41 +63,20 @@
 </template>
 
 <script setup lang="ts">
-/**
- * ==========================================
- * ЛОГИКА СТРАНИЦЫ ВХОДА
- * ==========================================
- */
 
 import { reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-// ==========================================
-// ХРАНИЛИЩА И РОУТЕР
-// ==========================================
-
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-// ==========================================
-// СОСТОЯНИЕ ФОРМЫ
-// ==========================================
-
-/** Данные формы входа */
 const form = reactive({
   email: '',
   password: ''
 })
 
-// ==========================================
-// ОБРАБОТЧИКИ
-// ==========================================
-
-/**
- * Обработка отправки формы входа
- */
 async function handleLogin(): Promise<void> {
   const success = await authStore.login({
     email: form.email,
@@ -128,8 +84,7 @@ async function handleLogin(): Promise<void> {
   })
 
   if (success) {
-    // Если был redirect query param - переходим туда
-    // Иначе на dashboard
+
     const redirect = route.query.redirect as string || '/dashboard'
     router.push(redirect)
   }
@@ -137,11 +92,7 @@ async function handleLogin(): Promise<void> {
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ СТРАНИЦЫ АВТОРИЗАЦИИ
-   ========================================== */
 
-/* Страница (центрирование карточки) */
 .auth-page {
   min-height: 100vh;
   display: flex;
@@ -151,7 +102,6 @@ async function handleLogin(): Promise<void> {
   background: radial-gradient(ellipse at top, var(--accent-glow) 0%, transparent 50%);
 }
 
-/* Карточка формы */
 .auth-card {
   width: 100%;
   max-width: 420px;
@@ -161,10 +111,6 @@ async function handleLogin(): Promise<void> {
   padding: 2.5rem;
   box-shadow: 0 16px 64px rgba(0, 0, 0, 0.3);
 }
-
-/* ==========================================
-   ЗАГОЛОВОК
-   ========================================== */
 
 .auth-header {
   text-align: center;
@@ -181,17 +127,12 @@ async function handleLogin(): Promise<void> {
   color: var(--color-text-muted);
 }
 
-/* ==========================================
-   ФОРМА
-   ========================================== */
-
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
 }
 
-/* Группа поля */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -224,7 +165,6 @@ async function handleLogin(): Promise<void> {
   color: var(--color-text-muted);
 }
 
-/* Ссылка "Забыли пароль?" */
 .forgot-link {
   font-size: 0.85rem;
   color: var(--color-text-muted);
@@ -235,11 +175,6 @@ async function handleLogin(): Promise<void> {
   color: var(--color-primary);
 }
 
-/* ==========================================
-   СООБЩЕНИЯ
-   ========================================== */
-
-/* Ошибка */
 .error-message {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
@@ -249,19 +184,11 @@ async function handleLogin(): Promise<void> {
   font-size: 0.9rem;
 }
 
-/* ==========================================
-   КНОПКА
-   ========================================== */
-
 .btn-block {
   width: 100%;
   padding: 1rem;
   font-size: 1rem;
 }
-
-/* ==========================================
-   ФУТЕР
-   ========================================== */
 
 .auth-footer {
   text-align: center;

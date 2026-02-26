@@ -1,51 +1,34 @@
-<!--
-  ==========================================
-  ПОДТВЕРЖДЕНИЕ EMAIL (VerifyEmailView.vue)
-  ==========================================
-  
-  Страница подтверждения email:
-  - Проверка токена из URL
-  - Отображение результата
--->
+
 
 <template>
   <div class="auth-page">
     <div class="auth-card">
-      
-      <!-- ==========================================
-           ЗАГРУЗКА
-           ========================================== -->
+
       <div v-if="isLoading" class="loading-state">
         <div class="spinner"></div>
         <p>Подтверждение email...</p>
       </div>
 
-      <!-- ==========================================
-           УСПЕХ
-           ========================================== -->
       <div v-else-if="isSuccess" class="success-message">
-        <div class="success-icon">✅</div>
+        <div class="success-icon"></div>
         <h2>Email подтверждён!</h2>
         <p>Теперь вы можете использовать все функции платформы</p>
         <router-link to="/dashboard" class="btn btn-primary">
-          🏠 Перейти в личный кабинет
+           Перейти в личный кабинет
         </router-link>
       </div>
 
-      <!-- ==========================================
-           ОШИБКА
-           ========================================== -->
       <div v-else class="error-state">
-        <div class="error-icon">⚠️</div>
+        <div class="error-icon"></div>
         <h2>Ошибка подтверждения</h2>
         <p>{{ errorMessage }}</p>
         
         <div class="actions">
           <button @click="resendVerification" class="btn btn-outline" :disabled="isResending">
-            {{ isResending ? '⏳ Отправка...' : '📤 Отправить повторно' }}
+            {{ isResending ? ' Отправка...' : ' Отправить повторно' }}
           </button>
           <router-link to="/login" class="btn btn-primary">
-            🔐 Войти
+             Войти
           </router-link>
         </div>
       </div>
@@ -55,47 +38,23 @@
 </template>
 
 <script setup lang="ts">
-/**
- * ==========================================
- * ЛОГИКА ПОДТВЕРЖДЕНИЯ EMAIL
- * ==========================================
- */
 
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
-// ==========================================
-// МАРШРУТИЗАЦИЯ И ХРАНИЛИЩА
-// ==========================================
-
 const route = useRoute()
 const authStore = useAuthStore()
 
-// ==========================================
-// СОСТОЯНИЕ
-// ==========================================
-
-/** Флаг загрузки */
 const isLoading = ref(true)
 
-/** Флаг успешного подтверждения */
 const isSuccess = ref(false)
 
-/** Флаг повторной отправки */
 const isResending = ref(false)
 
-/** Сообщение об ошибке */
 const errorMessage = ref('')
 
-// ==========================================
-// МЕТОДЫ
-// ==========================================
-
-/**
- * Подтверждает email по токену
- */
 async function verifyEmail(): Promise<void> {
   const token = route.query.token as string
   
@@ -108,8 +67,7 @@ async function verifyEmail(): Promise<void> {
   try {
     await api.verifyEmail(token)
     isSuccess.value = true
-    
-    // Обновляем данные пользователя
+
     if (authStore.isAuthenticated) {
       await authStore.refreshUser()
     }
@@ -128,9 +86,6 @@ async function verifyEmail(): Promise<void> {
   }
 }
 
-/**
- * Отправляет повторное письмо подтверждения
- */
 async function resendVerification(): Promise<void> {
   if (!authStore.isAuthenticated) {
     alert('Войдите в аккаунт для повторной отправки')
@@ -141,18 +96,14 @@ async function resendVerification(): Promise<void> {
   
   try {
     await api.resendVerificationEmail()
-    alert('✅ Письмо отправлено! Проверьте почту.')
+    alert(' Письмо отправлено! Проверьте почту.')
   } catch (error) {
     console.error('Ошибка отправки:', error)
-    alert('❌ Ошибка при отправке письма')
+    alert(' Ошибка при отправке письма')
   } finally {
     isResending.value = false
   }
 }
-
-// ==========================================
-// ЖИЗНЕННЫЙ ЦИКЛ
-// ==========================================
 
 onMounted(() => {
   verifyEmail()
@@ -160,9 +111,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ ПОДТВЕРЖДЕНИЯ EMAIL
-   ========================================== */
 
 .auth-page {
   min-height: calc(100vh - 60px);
@@ -181,10 +129,6 @@ onMounted(() => {
   max-width: 420px;
   text-align: center;
 }
-
-/* ==========================================
-   ЗАГРУЗКА
-   ========================================== */
 
 .loading-state {
   padding: 2rem 0;
@@ -207,10 +151,6 @@ onMounted(() => {
 .loading-state p {
   color: var(--color-text-muted);
 }
-
-/* ==========================================
-   УСПЕХ / ОШИБКА
-   ========================================== */
 
 .success-message,
 .error-state {
@@ -244,10 +184,6 @@ onMounted(() => {
   line-height: 1.6;
 }
 
-/* ==========================================
-   ДЕЙСТВИЯ
-   ========================================== */
-
 .actions {
   display: flex;
   flex-direction: column;
@@ -258,6 +194,4 @@ onMounted(() => {
   width: 100%;
 }
 </style>
-
-
 

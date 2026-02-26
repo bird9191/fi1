@@ -1,59 +1,36 @@
-<!--
-  ==========================================
-  ДЕТАЛИ РЕЗУЛЬТАТА (ResultDetailsView.vue)
-  ==========================================
-  
-  Подробная информация о пройденном тесте:
-  - Общая статистика
-  - Разбор каждого вопроса
-  - Правильные и неправильные ответы
--->
+
 
 <template>
   <div class="result-details-page">
-    
-    <!-- ==========================================
-         СОСТОЯНИЕ ЗАГРУЗКИ
-         ========================================== -->
+
     <div v-if="isLoading" class="loading">
       <div class="spinner"></div>
       <p>Загрузка результатов...</p>
     </div>
 
-    <!-- ==========================================
-         РЕЗУЛЬТАТ НЕ НАЙДЕН
-         ========================================== -->
     <div v-else-if="!result" class="not-found">
-      <h2>😕 Результат не найден</h2>
+      <h2> Результат не найден</h2>
       <router-link to="/results" class="btn btn-primary">
         ← Вернуться к результатам
       </router-link>
     </div>
 
-    <!-- ==========================================
-         ОСНОВНОЙ КОНТЕНТ
-         ========================================== -->
     <template v-else>
-      
-      <!-- Кнопка назад -->
+
       <router-link to="/results" class="back-link">
         ← Назад к результатам
       </router-link>
 
-      <!-- ==========================================
-           КАРТОЧКА РЕЗУЛЬТАТА
-           ========================================== -->
       <div class="result-card">
         <div class="result-header">
           <div>
             <span class="type-badge" :class="result.testType || 'test'">
-              {{ result.testType === 'exam' ? '📋 Экзамен' : '✏️ Тест' }}
+              {{ result.testType === 'exam' ? ' Экзамен' : ' Тест' }}
             </span>
             <h1>{{ result.testTitle }}</h1>
             <p class="date">Пройден {{ formatDate(result.completedAt) }}</p>
           </div>
-          
-          <!-- Круговой прогресс -->
+
           <div class="score-circle" :class="getScoreClass(result.score)">
             <svg viewBox="0 0 36 36" class="circular-chart">
               <path
@@ -77,24 +54,23 @@
           </div>
         </div>
 
-        <!-- Статистика -->
         <div class="stats-grid">
           <div class="stat-item">
-            <span class="stat-icon">✓</span>
+            <span class="stat-icon"></span>
             <div>
               <div class="stat-value">{{ correctCount }}</div>
               <div class="stat-label">Правильных</div>
             </div>
           </div>
           <div class="stat-item">
-            <span class="stat-icon">✗</span>
+            <span class="stat-icon"></span>
             <div>
               <div class="stat-value">{{ wrongCount }}</div>
               <div class="stat-label">Неправильных</div>
             </div>
           </div>
           <div class="stat-item">
-            <span class="stat-icon">⏱</span>
+            <span class="stat-icon"></span>
             <div>
               <div class="stat-value">{{ formatTime(result.timeSpent) }}</div>
               <div class="stat-label">Время</div>
@@ -103,11 +79,8 @@
         </div>
       </div>
 
-      <!-- ==========================================
-           РАЗБОР ВОПРОСОВ
-           ========================================== -->
       <section class="questions-review">
-        <h2>📝 Разбор вопросов</h2>
+        <h2> Разбор вопросов</h2>
         
         <div 
           v-for="(question, index) in result.questions" 
@@ -118,39 +91,35 @@
           <div class="question-header">
             <span class="question-number">Вопрос {{ index + 1 }}</span>
             <span class="question-status">
-              {{ question.isCorrect ? '✓ Верно' : '✗ Неверно' }}
+              {{ question.isCorrect ? ' Верно' : ' Неверно' }}
             </span>
           </div>
 
           <p class="question-text">{{ question.text }}</p>
 
-          <!-- Ответы -->
           <div class="answers">
-            <!-- Ваш ответ -->
+            
             <div class="answer your-answer" :class="{ correct: question.isCorrect }">
               <span class="answer-label">Ваш ответ:</span>
               <span class="answer-text">{{ question.userAnswer || '—' }}</span>
             </div>
-            
-            <!-- Правильный ответ (если неверно) -->
+
             <div v-if="!question.isCorrect" class="answer correct-answer">
               <span class="answer-label">Правильный ответ:</span>
               <span class="answer-text">{{ question.correctAnswer }}</span>
             </div>
           </div>
 
-          <!-- Объяснение -->
           <div v-if="question.explanation" class="explanation">
-            <span class="explanation-icon">💡</span>
+            <span class="explanation-icon"></span>
             <span>{{ question.explanation }}</span>
           </div>
         </div>
       </section>
 
-      <!-- Действия -->
       <div class="actions">
         <router-link :to="`/tests/${result.testId}`" class="btn btn-primary">
-          🔄 Пройти снова
+           Пройти снова
         </router-link>
       </div>
       
@@ -160,19 +129,10 @@
 </template>
 
 <script setup lang="ts">
-/**
- * ==========================================
- * ЛОГИКА ДЕТАЛЕЙ РЕЗУЛЬТАТА
- * ==========================================
- */
 
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/services/api'
-
-// ==========================================
-// ИНТЕРФЕЙСЫ
-// ==========================================
 
 interface QuestionResult {
   text: string
@@ -194,43 +154,20 @@ interface ResultDetails {
   questions: QuestionResult[]
 }
 
-// ==========================================
-// МАРШРУТИЗАЦИЯ
-// ==========================================
-
 const route = useRoute()
 
-// ==========================================
-// СОСТОЯНИЕ
-// ==========================================
-
-/** Флаг загрузки */
 const isLoading = ref(true)
 
-/** Данные результата */
 const result = ref<ResultDetails | null>(null)
 
-// ==========================================
-// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
-// ==========================================
-
-/** Количество правильных ответов */
 const correctCount = computed(() =>
   result.value?.questions.filter(q => q.isCorrect).length || 0
 )
 
-/** Количество неправильных ответов */
 const wrongCount = computed(() =>
   result.value?.questions.filter(q => !q.isCorrect).length || 0
 )
 
-// ==========================================
-// МЕТОДЫ
-// ==========================================
-
-/**
- * Форматирует дату
- */
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
   return date.toLocaleDateString('ru-RU', {
@@ -242,9 +179,6 @@ function formatDate(dateString: string): string {
   })
 }
 
-/**
- * Форматирует время
- */
 function formatTime(seconds: number): string {
   if (!seconds) return '—'
   const mins = Math.floor(seconds / 60)
@@ -252,9 +186,6 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-/**
- * Возвращает класс для результата
- */
 function getScoreClass(score: number): string {
   if (score >= 80) return 'excellent'
   if (score >= 60) return 'good'
@@ -262,9 +193,6 @@ function getScoreClass(score: number): string {
   return 'poor'
 }
 
-/**
- * Загружает данные результата
- */
 async function loadResult(): Promise<void> {
   isLoading.value = true
   
@@ -280,29 +208,18 @@ async function loadResult(): Promise<void> {
   }
 }
 
-// ==========================================
-// ЖИЗНЕННЫЙ ЦИКЛ
-// ==========================================
-
 onMounted(() => {
   loadResult()
 })
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ ДЕТАЛЕЙ РЕЗУЛЬТАТА
-   ========================================== */
 
 .result-details-page {
   padding: 2rem;
   max-width: 800px;
   margin: 0 auto;
 }
-
-/* ==========================================
-   СОСТОЯНИЯ
-   ========================================== */
 
 .loading,
 .not-found {
@@ -327,10 +244,6 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* ==========================================
-   НАВИГАЦИЯ
-   ========================================== */
-
 .back-link {
   display: inline-block;
   color: var(--color-text-muted);
@@ -341,10 +254,6 @@ onMounted(() => {
 .back-link:hover {
   color: var(--color-primary);
 }
-
-/* ==========================================
-   КАРТОЧКА РЕЗУЛЬТАТА
-   ========================================== */
 
 .result-card {
   background: var(--color-surface);
@@ -389,7 +298,6 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
-/* Круговой прогресс */
 .score-circle {
   position: relative;
   width: 120px;
@@ -443,7 +351,6 @@ onMounted(() => {
   color: var(--color-text-muted);
 }
 
-/* Статистика */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -472,10 +379,6 @@ onMounted(() => {
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
-
-/* ==========================================
-   РАЗБОР ВОПРОСОВ
-   ========================================== */
 
 .questions-review {
   margin-bottom: 2rem;
@@ -532,7 +435,6 @@ onMounted(() => {
   margin-bottom: 1rem;
 }
 
-/* Ответы */
 .answers {
   display: flex;
   flex-direction: column;
@@ -569,7 +471,6 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* Объяснение */
 .explanation {
   display: flex;
   align-items: flex-start;
@@ -582,17 +483,9 @@ onMounted(() => {
   color: #fbbf24;
 }
 
-/* ==========================================
-   ДЕЙСТВИЯ
-   ========================================== */
-
 .actions {
   text-align: center;
 }
-
-/* ==========================================
-   АДАПТИВНОСТЬ
-   ========================================== */
 
 @media (max-width: 600px) {
   .result-header {

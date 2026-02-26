@@ -1,71 +1,41 @@
-/**
- * ============================================
- * API СЕРВИС
- * ============================================
- * 
- * Централизованный сервис для всех HTTP запросов к серверу.
- * Автоматически добавляет токен авторизации к запросам.
- */
-
 import type { User, Test, TestResult, UserAnswer, QuestionStat } from '@/types'
 
-// URL API сервера (можно переопределить через .env)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
-// ============================================
-// ТИПЫ ОТВЕТОВ
-// ============================================
-
-/** Базовый ответ API */
 interface ApiResponse<T = unknown> {
   data?: T
   error?: string
 }
 
-/** Ответ авторизации */
 interface AuthResponse {
   user: User
   token: string
 }
 
-/** Ответ со списком тестов */
 interface TestsResponse {
   tests: Test[]
 }
 
-/** Ответ со списком результатов */
 interface ResultsResponse {
   results: TestResult[]
 }
 
-// ============================================
-// API КЛАСС
-// ============================================
-
 class ApiService {
-  /**
-   * Получить токен из localStorage
-   */
   private getToken(): string | null {
     return localStorage.getItem('token')
   }
 
-  /**
-   * Выполнить HTTP запрос к API
-   */
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const token = this.getToken()
 
-    // Формируем заголовки
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     }
 
-    // Добавляем токен авторизации
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
@@ -89,11 +59,6 @@ class ApiService {
     }
   }
 
-  // ==========================================
-  // АВТОРИЗАЦИЯ
-  // ==========================================
-
-  /** Вход в систему */
   async login(email: string, password: string) {
     return this.request<AuthResponse>('/auth/login', {
       method: 'POST',
@@ -101,7 +66,6 @@ class ApiService {
     })
   }
 
-  /** Регистрация нового пользователя */
   async register(email: string, password: string, name: string, role: string) {
     return this.request<AuthResponse>('/auth/register', {
       method: 'POST',
@@ -109,12 +73,10 @@ class ApiService {
     })
   }
 
-  /** Получить данные текущего пользователя */
   async getCurrentUser() {
     return this.request<{ user: User }>('/auth/me')
   }
 
-  /** Сменить пароль */
   async changePassword(currentPassword: string, newPassword: string) {
     return this.request<{ message: string }>('/auth/change-password', {
       method: 'POST',
@@ -122,11 +84,6 @@ class ApiService {
     })
   }
 
-  // ==========================================
-  // ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
-  // ==========================================
-
-  /** Обновить профиль */
   async updateProfile(data: { name?: string; email?: string; phone?: string }) {
     return this.request<{ user: User }>('/users/profile', {
       method: 'PUT',
@@ -134,7 +91,6 @@ class ApiService {
     })
   }
 
-  /** Обновить аватар */
   async updateAvatar(avatar: string | null) {
     return this.request<{ user: User }>('/users/avatar', {
       method: 'PUT',
@@ -142,18 +98,12 @@ class ApiService {
     })
   }
 
-  /** Удалить аккаунт */
   async deleteAccount() {
     return this.request<{ message: string }>('/users/account', {
       method: 'DELETE',
     })
   }
 
-  // ==========================================
-  // ТЕСТЫ
-  // ==========================================
-
-  /** Получить публичные тесты (с поиском и фильтрами) */
   async getTests(params?: { search?: string; category?: string }) {
     const searchParams = new URLSearchParams()
     if (params?.search) searchParams.set('search', params.search)
@@ -162,17 +112,14 @@ class ApiService {
     return this.request<TestsResponse>(`/tests${query ? `?${query}` : ''}`)
   }
 
-  /** Получить тесты текущего учителя */
   async getMyTests() {
     return this.request<TestsResponse>('/tests/my')
   }
 
-  /** Получить тест по ID */
   async getTest(id: string) {
     return this.request<{ test: Test }>(`/tests/${id}`)
   }
 
-  /** Создать новый тест */
   async createTest(testData: Partial<Test>) {
     return this.request<{ test: Test }>('/tests', {
       method: 'POST',
@@ -180,7 +127,6 @@ class ApiService {
     })
   }
 
-  /** Обновить тест */
   async updateTest(id: string, testData: Partial<Test>) {
     return this.request<{ test: Test }>(`/tests/${id}`, {
       method: 'PUT',
@@ -188,18 +134,12 @@ class ApiService {
     })
   }
 
-  /** Удалить тест */
   async deleteTest(id: string) {
     return this.request<{ message: string }>(`/tests/${id}`, {
       method: 'DELETE',
     })
   }
 
-  // ==========================================
-  // РЕЗУЛЬТАТЫ
-  // ==========================================
-
-  /** Отправить результат теста */
   async submitTest(
     testId: string,
     data: {
@@ -215,57 +155,39 @@ class ApiService {
     })
   }
 
-  /** Получить результаты текущего пользователя */
   async getMyResults() {
     return this.request<ResultsResponse>('/tests/results/my')
   }
 
-  /** Получить результаты конкретного теста (для учителя) */
   async getTestResults(testId: string) {
     return this.request<ResultsResponse>(`/tests/${testId}/results`)
   }
 
-  // ==========================================
-  // КАТЕГОРИИ
-  // ==========================================
-
-  /** Получить список категорий */
   async getCategories() {
-    return this.request<{ 
-      categories: Array<{ id: string; name: string; color: string }> 
+    return this.request<{
+      categories: Array<{ id: string; name: string; color: string }>
     }>('/categories')
   }
 
-  // ==========================================
-  // УВЕДОМЛЕНИЯ
-  // ==========================================
-
-  /** Получить уведомления */
   async getNotifications() {
-    return this.request<{ 
-      notifications: Array<{ 
+    return this.request<{
+      notifications: Array<{
         id: string
         type: string
         title: string
         message: string
         isRead: boolean
-        createdAt: string 
-      }> 
+        createdAt: string
+      }>
     }>('/notifications')
   }
 
-  /** Отметить уведомление как прочитанное */
   async markNotificationRead(id: string) {
     return this.request<{ message: string }>(`/notifications/${id}/read`, {
       method: 'PUT',
     })
   }
 
-  // ==========================================
-  // ПОДТВЕРЖДЕНИЕ EMAIL
-  // ==========================================
-
-  /** Подтвердить email по токену */
   async verifyEmail(token: string) {
     return this.request<{ message: string }>('/auth/verify-email', {
       method: 'POST',
@@ -273,18 +195,12 @@ class ApiService {
     })
   }
 
-  /** Повторно отправить письмо подтверждения */
   async resendVerification() {
     return this.request<{ message: string }>('/auth/resend-verification', {
       method: 'POST',
     })
   }
 
-  // ==========================================
-  // СБРОС ПАРОЛЯ
-  // ==========================================
-
-  /** Запросить сброс пароля */
   async forgotPassword(email: string) {
     return this.request<{ message: string }>('/auth/forgot-password', {
       method: 'POST',
@@ -292,7 +208,6 @@ class ApiService {
     })
   }
 
-  /** Установить новый пароль по токену */
   async resetPassword(token: string, password: string) {
     return this.request<{ message: string }>('/auth/reset-password', {
       method: 'POST',
@@ -300,11 +215,6 @@ class ApiService {
     })
   }
 
-  // ==========================================
-  // АДМИН-ПАНЕЛЬ
-  // ==========================================
-
-  /** Получить статистику системы */
   async getAdminStats() {
     const res = await this.request<{
       totalUsers: number
@@ -313,28 +223,26 @@ class ApiService {
       activeToday: number
       totalQuestions?: number
     }>('/admin/stats')
-    
+
     if (res.error) throw new Error(res.error)
     return res.data!
   }
 
-  /** Получить список пользователей */
   async getAdminUsers() {
-    const res = await this.request<{ 
+    const res = await this.request<{
       users: Array<{
         id: string
         name: string
         email: string
         role: string
         createdAt: string
-      }> 
+      }>
     }>('/admin/users')
-    
+
     if (res.error) throw new Error(res.error)
     return res.data!.users
   }
 
-  /** Изменить роль пользователя */
   async updateUserRole(userId: string, role: string) {
     const res = await this.request<{ message: string }>(
       `/admin/users/${userId}/role`,
@@ -343,23 +251,21 @@ class ApiService {
         body: JSON.stringify({ role }),
       }
     )
-    
+
     if (res.error) throw new Error(res.error)
     return res.data
   }
 
-  /** Удалить пользователя (админ) */
   async deleteUserAdmin(userId: string) {
     const res = await this.request<{ message: string }>(
       `/admin/users/${userId}`,
       { method: 'DELETE' }
     )
-    
+
     if (res.error) throw new Error(res.error)
     return res.data
   }
 
-  /** Отправить уведомление всем пользователям */
   async broadcastNotification(title: string, message: string, type: string) {
     const res = await this.request<{ message: string }>(
       '/admin/notifications/broadcast',
@@ -368,11 +274,10 @@ class ApiService {
         body: JSON.stringify({ title, message, type }),
       }
     )
-    
+
     if (res.error) throw new Error(res.error)
     return res.data
   }
 }
 
-// Экспортируем единственный экземпляр API сервиса
 export const api = new ApiService()

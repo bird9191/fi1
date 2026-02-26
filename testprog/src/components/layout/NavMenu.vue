@@ -1,31 +1,31 @@
 <template>
-  <aside class="sidebar">
-    <div v-if="$slots.header" class="sidebar-header">
+  <aside class="menu">
+    <div v-if="$slots.header" class="menu-header">
       <slot name="header" />
     </div>
     
-    <nav class="sidebar-nav">
+    <nav class="nav">
       <button
         v-for="item in items"
         :key="item.id"
-        class="nav-item"
+        class="item"
         :class="{ active: modelValue === item.id }"
         @click="$emit('update:modelValue', item.id)"
       >
-        <span v-if="item.icon" class="nav-icon">{{ item.icon }}</span>
-        <span class="nav-label">{{ item.label }}</span>
-        <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
+        <span v-if="item.icon" class="icon">{{ item.icon }}</span>
+        <span class="label">{{ item.label }}</span>
+        <span v-if="item.badge" class="badge">{{ item.badge }}</span>
       </button>
     </nav>
     
-    <div v-if="$slots.footer" class="sidebar-footer">
+    <div v-if="$slots.footer" class="menu-footer">
       <slot name="footer" />
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-export interface SidebarItem {
+export interface NavMenuItem {
   id: string
   label: string
   icon?: string
@@ -34,7 +34,7 @@ export interface SidebarItem {
 
 interface Props {
   modelValue: string
-  items: SidebarItem[]
+  items: NavMenuItem[]
 }
 
 defineProps<Props>()
@@ -45,7 +45,7 @@ defineEmits<{
 </script>
 
 <style scoped>
-.sidebar {
+.menu {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 20px;
@@ -55,19 +55,19 @@ defineEmits<{
   top: 5rem;
 }
 
-.sidebar-header {
+.menu-header {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--color-border);
 }
 
-.sidebar-nav {
+.nav {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.nav-item {
+.item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -83,25 +83,25 @@ defineEmits<{
   text-align: left;
 }
 
-.nav-item:hover {
+.item:hover {
   background: var(--color-background);
 }
 
-.nav-item.active {
+.item.active {
   background: rgba(99, 102, 241, 0.15);
   color: var(--color-primary);
 }
 
-.nav-icon {
+.icon {
   font-size: 1.1rem;
   flex-shrink: 0;
 }
 
-.nav-label {
+.label {
   flex: 1;
 }
 
-.nav-badge {
+.badge {
   font-size: 0.75rem;
   padding: 0.2rem 0.5rem;
   background: var(--color-primary);
@@ -109,24 +109,24 @@ defineEmits<{
   border-radius: 10px;
 }
 
-.sidebar-footer {
+.menu-footer {
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);
 }
 
 @media (max-width: 768px) {
-  .sidebar {
+  .menu {
     position: static;
   }
   
-  .sidebar-nav {
+  .nav {
     flex-direction: row;
     overflow-x: auto;
     gap: 0.5rem;
   }
   
-  .nav-item {
+  .item {
     flex-shrink: 0;
     white-space: nowrap;
   }

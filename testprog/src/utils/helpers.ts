@@ -1,18 +1,3 @@
-/**
- * ==========================================
- * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (helpers.ts)
- * ==========================================
- * 
- * Различные утилиты общего назначения
- */
-
-// ==========================================
-// МАССИВЫ
-// ==========================================
-
-/**
- * Перемешивает массив (алгоритм Фишера-Йейтса)
- */
 export function shuffle<T>(array: T[]): T[] {
   const result = [...array]
   for (let i = result.length - 1; i > 0; i--) {
@@ -22,9 +7,6 @@ export function shuffle<T>(array: T[]): T[] {
   return result
 }
 
-/**
- * Группирует массив по ключу
- */
 export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
   return array.reduce((groups, item) => {
     const value = String(item[key])
@@ -36,16 +18,10 @@ export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
   }, {} as Record<string, T[]>)
 }
 
-/**
- * Удаляет дубликаты из массива
- */
 export function unique<T>(array: T[]): T[] {
   return [...new Set(array)]
 }
 
-/**
- * Удаляет дубликаты по ключу
- */
 export function uniqueBy<T>(array: T[], key: keyof T): T[] {
   const seen = new Set()
   return array.filter(item => {
@@ -56,27 +32,14 @@ export function uniqueBy<T>(array: T[], key: keyof T): T[] {
   })
 }
 
-// ==========================================
-// ОБЪЕКТЫ
-// ==========================================
-
-/**
- * Глубокое клонирование объекта
- */
 export function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
-/**
- * Проверяет, пустой ли объект
- */
 export function isEmpty(obj: object): boolean {
   return Object.keys(obj).length === 0
 }
 
-/**
- * Выбирает указанные ключи из объекта
- */
 export function pick<T extends object, K extends keyof T>(
   obj: T, 
   keys: K[]
@@ -90,9 +53,6 @@ export function pick<T extends object, K extends keyof T>(
   return result
 }
 
-/**
- * Исключает указанные ключи из объекта
- */
 export function omit<T extends object, K extends keyof T>(
   obj: T, 
   keys: K[]
@@ -104,13 +64,6 @@ export function omit<T extends object, K extends keyof T>(
   return result
 }
 
-// ==========================================
-// DEBOUNCE / THROTTLE
-// ==========================================
-
-/**
- * Debounce - задержка выполнения
- */
 export function debounce<T extends (...args: any[]) => void>(
   func: T,
   wait: number
@@ -123,9 +76,6 @@ export function debounce<T extends (...args: any[]) => void>(
   }
 }
 
-/**
- * Throttle - ограничение частоты вызовов
- */
 export function throttle<T extends (...args: any[]) => void>(
   func: T,
   limit: number
@@ -141,45 +91,22 @@ export function throttle<T extends (...args: any[]) => void>(
   }
 }
 
-// ==========================================
-// ГЕНЕРАТОРЫ
-// ==========================================
-
-/**
- * Генерирует уникальный ID
- */
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9)
 }
 
-/**
- * Генерирует случайное число в диапазоне
- */
 export function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-/**
- * Генерирует случайный цвет
- */
 export function randomColor(): string {
   return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
 }
 
-// ==========================================
-// АСИНХРОННОСТЬ
-// ==========================================
-
-/**
- * Задержка выполнения
- */
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-/**
- * Повтор функции при ошибке
- */
 export async function retry<T>(
   fn: () => Promise<T>,
   attempts: number = 3,
@@ -200,8 +127,3 @@ export async function retry<T>(
   
   throw lastError
 }
-
-
-
-
-

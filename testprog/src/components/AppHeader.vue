@@ -11,8 +11,8 @@
           @click="toggleTheme" 
           :title="isDark ? 'Светлая тема' : 'Тёмная тема'"
         >
-          <span v-if="isDark" class="icon">☀</span>
-          <span v-else class="icon">🌙</span>
+          <span v-if="isDark" class="icon">Sun</span>
+          <span v-else class="icon">Moon</span>
         </button>
 
         <template v-if="authStore.isAuthenticated">

@@ -1,20 +1,3 @@
-/**
- * ==========================================
- * ФОРМАТИРОВАНИЕ ДАННЫХ (formatters.ts)
- * ==========================================
- * 
- * Утилиты для форматирования дат, чисел и текста
- */
-
-// ==========================================
-// ДАТЫ
-// ==========================================
-
-/**
- * Форматирует дату в читабельный формат
- * @param date - Дата (строка или Date)
- * @returns Форматированная строка
- */
 export function formatDate(date: string | Date): string {
   const d = new Date(date)
   return d.toLocaleDateString('ru-RU', {
@@ -24,9 +7,6 @@ export function formatDate(date: string | Date): string {
   })
 }
 
-/**
- * Форматирует дату с временем
- */
 export function formatDateTime(date: string | Date): string {
   const d = new Date(date)
   return d.toLocaleDateString('ru-RU', {
@@ -38,9 +18,6 @@ export function formatDateTime(date: string | Date): string {
   })
 }
 
-/**
- * Форматирует относительное время (например: "5 минут назад")
- */
 export function formatRelativeTime(date: string | Date): string {
   const d = new Date(date)
   const now = new Date()
@@ -59,22 +36,12 @@ export function formatRelativeTime(date: string | Date): string {
   return formatDate(date)
 }
 
-// ==========================================
-// ВРЕМЯ
-// ==========================================
-
-/**
- * Форматирует секунды в формат ММ:СС
- */
 export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-/**
- * Форматирует секунды в формат ЧЧ:ММ:СС
- */
 export function formatTimeFull(seconds: number): string {
   const hours = Math.floor(seconds / 3600)
   const mins = Math.floor((seconds % 3600) / 60)
@@ -82,9 +49,6 @@ export function formatTimeFull(seconds: number): string {
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-/**
- * Форматирует минуты в читабельный вид
- */
 export function formatMinutes(minutes: number): string {
   if (minutes < 60) return `${minutes} мин`
   const hours = Math.floor(minutes / 60)
@@ -92,30 +56,15 @@ export function formatMinutes(minutes: number): string {
   return mins > 0 ? `${hours} ч ${mins} мин` : `${hours} ч`
 }
 
-// ==========================================
-// ЧИСЛА
-// ==========================================
-
-/**
- * Форматирует число с разделителями тысяч
- */
 export function formatNumber(num: number): string {
   return num.toLocaleString('ru-RU')
 }
 
-/**
- * Форматирует процент
- */
 export function formatPercent(value: number, total: number): string {
   if (total === 0) return '0%'
   return Math.round((value / total) * 100) + '%'
 }
 
-/**
- * Склонение слов по числам
- * @param count - Число
- * @param words - Массив из 3 форм: [1, 2-4, 5+]
- */
 export function pluralize(count: number, words: [string, string, string]): string {
   const cases = [2, 0, 1, 1, 1, 2]
   const index = (count % 100 > 4 && count % 100 < 20) 
@@ -124,21 +73,11 @@ export function pluralize(count: number, words: [string, string, string]): strin
   return words[index]
 }
 
-// ==========================================
-// ТЕКСТ
-// ==========================================
-
-/**
- * Обрезает текст до указанной длины
- */
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength - 3) + '...'
 }
 
-/**
- * Получает инициалы из имени
- */
 export function getInitials(name: string): string {
   return name
     .split(' ')
@@ -147,14 +86,6 @@ export function getInitials(name: string): string {
     .join('')
 }
 
-/**
- * Капитализирует первую букву
- */
 export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
-
-
-
-
-

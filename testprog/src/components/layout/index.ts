@@ -1,14 +1,4 @@
-/**
- * ==========================================
- * ЭКСПОРТ LAYOUT КОМПОНЕНТОВ
- * ==========================================
- */
-
-export { default as PageHeader } from './PageHeader.vue'
-export { default as Sidebar } from './Sidebar.vue'
-export { default as EmptyState } from './EmptyState.vue'
-
-
-
-
+export { default as Header } from './Header.vue'
+export { default as NavMenu } from './NavMenu.vue'
+export { default as Placeholder } from './Placeholder.vue'
 

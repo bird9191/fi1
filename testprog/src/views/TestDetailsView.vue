@@ -1,75 +1,47 @@
-<!--
-  ==========================================
-  СТРАНИЦА ПОДРОБНОСТЕЙ ТЕСТА (TestDetailsView.vue)
-  ==========================================
-  
-  Детальная информация о тесте/экзамене:
-  - Название, описание, автор
-  - Настройки (время, кол-во попыток и т.д.)
-  - Кнопка начала прохождения
-  - Для автора - кнопки редактирования/удаления
--->
+
 
 <template>
   <div class="test-details-page">
-    
-    <!-- ==========================================
-         СОСТОЯНИЕ ЗАГРУЗКИ
-         ========================================== -->
+
     <div v-if="isLoading" class="loading">
       <div class="spinner"></div>
       <p>Загрузка информации о тесте...</p>
     </div>
 
-    <!-- ==========================================
-         ТЕСТ НЕ НАЙДЕН
-         ========================================== -->
     <div v-else-if="!test" class="not-found">
-      <h2>😕 Тест не найден</h2>
+      <h2> Тест не найден</h2>
       <p>Возможно, он был удалён или у вас нет доступа</p>
       <router-link to="/tests" class="btn btn-primary">
         ← Вернуться к тестам
       </router-link>
     </div>
 
-    <!-- ==========================================
-         СОДЕРЖИМОЕ СТРАНИЦЫ
-         ========================================== -->
     <template v-else>
-      
-      <!-- Кнопка назад -->
+
       <router-link to="/tests" class="back-link">
         ← Назад к каталогу
       </router-link>
 
-      <!-- Основной контент -->
       <div class="test-content">
-        
-        <!-- ==========================================
-             ЛЕВАЯ ЧАСТЬ: Информация о тесте
-             ========================================== -->
+
         <div class="test-info">
-          
-          <!-- Бейджи -->
+
           <div class="badges">
             <span class="type-badge" :class="test.type || 'test'">
-              {{ test.type === 'exam' ? '📋 Экзамен' : '✏️ Тест' }}
+              {{ test.type === 'exam' ? ' Экзамен' : ' Тест' }}
             </span>
             <span v-if="test.timeLimit" class="setting-badge">
-              ⏱ {{ test.timeLimit }} мин
+               {{ test.timeLimit }} мин
             </span>
             <span v-if="test.strictMode" class="setting-badge strict">
-              🔒 Строгий режим
+               Строгий режим
             </span>
           </div>
 
-          <!-- Заголовок -->
           <h1>{{ test.title }}</h1>
 
-          <!-- Описание -->
           <p class="description">{{ test.description }}</p>
 
-          <!-- Автор -->
           <div class="author-info">
             <span class="author-avatar">{{ test.authorName.charAt(0) }}</span>
             <div>
@@ -80,9 +52,8 @@
             </div>
           </div>
 
-          <!-- Настройки теста (для экзаменов) -->
           <div v-if="test.type === 'exam'" class="test-settings">
-            <h3>⚙️ Настройки экзамена</h3>
+            <h3> Настройки экзамена</h3>
             
             <div class="settings-list">
               <div class="setting-item">
@@ -99,39 +70,34 @@
               
               <div class="setting-item">
                 <span class="setting-label">Перемешивание вопросов:</span>
-                <span class="setting-value">{{ test.shuffleQuestions ? '✅ Да' : '❌ Нет' }}</span>
+                <span class="setting-value">{{ test.shuffleQuestions ? ' Да' : ' Нет' }}</span>
               </div>
               
               <div class="setting-item">
                 <span class="setting-label">Перемешивание ответов:</span>
-                <span class="setting-value">{{ test.shuffleOptions ? '✅ Да' : '❌ Нет' }}</span>
+                <span class="setting-value">{{ test.shuffleOptions ? ' Да' : ' Нет' }}</span>
               </div>
               
               <div class="setting-item">
                 <span class="setting-label">Подсказки:</span>
-                <span class="setting-value">{{ test.showHints ? '✅ Да' : '❌ Нет' }}</span>
+                <span class="setting-value">{{ test.showHints ? ' Да' : ' Нет' }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Действия автора -->
           <div v-if="isAuthor" class="author-actions">
             <router-link :to="`/tests/${test.id}/edit`" class="btn btn-outline">
-              ✏️ Редактировать
+               Редактировать
             </router-link>
             <button @click="confirmDelete" class="btn btn-danger">
-              🗑️ Удалить
+               Удалить
             </button>
           </div>
         </div>
 
-        <!-- ==========================================
-             ПРАВАЯ ЧАСТЬ: Карточка прохождения
-             ========================================== -->
         <div class="take-test-card">
-          <h3>🎯 Готовы начать?</h3>
-          
-          <!-- Статистика -->
+          <h3> Готовы начать?</h3>
+
           <div class="quick-stats">
             <div class="stat">
               <div class="stat-value">{{ test.questions.length }}</div>
@@ -147,33 +113,30 @@
             </div>
           </div>
 
-          <!-- Предупреждения для экзаменов -->
           <div v-if="test.type === 'exam'" class="exam-warnings">
             <div class="warning-item" v-if="test.strictMode">
-              ⚠️ Строгий режим: экзамен отменится при выходе с вкладки
+               Строгий режим: экзамен отменится при выходе с вкладки
             </div>
             <div class="warning-item" v-if="test.timeLimit">
-              ⏳ На прохождение отводится {{ test.timeLimit }} минут
+               На прохождение отводится {{ test.timeLimit }} минут
             </div>
             <div class="warning-item" v-if="test.maxAttempts && test.maxAttempts > 0">
-              🔄 Максимум попыток: {{ test.maxAttempts }}
+               Максимум попыток: {{ test.maxAttempts }}
             </div>
           </div>
 
-          <!-- Кнопка начала -->
           <router-link
             v-if="authStore.isAuthenticated"
             :to="`/tests/${test.id}/take`"
             class="btn btn-primary btn-large"
           >
-            ▶️ {{ test.type === 'exam' ? 'Начать экзамен' : 'Начать тест' }}
+             {{ test.type === 'exam' ? 'Начать экзамен' : 'Начать тест' }}
           </router-link>
-          
-          <!-- Для неавторизованных -->
+
           <div v-else class="auth-required">
             <p>Для прохождения теста необходимо войти</p>
             <router-link to="/login" class="btn btn-primary">
-              🔐 Войти
+               Войти
             </router-link>
           </div>
         </div>
@@ -185,11 +148,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * ==========================================
- * ЛОГИКА СТРАНИЦЫ ПОДРОБНОСТЕЙ ТЕСТА
- * ==========================================
- */
 
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -197,47 +155,21 @@ import { useAuthStore } from '@/stores/auth'
 import { useTestsStore } from '@/stores/tests'
 import type { Test } from '@/types'
 
-// ==========================================
-// МАРШРУТИЗАЦИЯ
-// ==========================================
-
 const route = useRoute()
 const router = useRouter()
-
-// ==========================================
-// ХРАНИЛИЩА
-// ==========================================
 
 const authStore = useAuthStore()
 const testsStore = useTestsStore()
 
-// ==========================================
-// СОСТОЯНИЕ
-// ==========================================
-
-/** Флаг загрузки */
 const isLoading = ref(true)
 
-/** Данные теста */
 const test = ref<Test | null>(null)
 
-// ==========================================
-// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
-// ==========================================
-
-/** Является ли текущий пользователь автором теста */
 const isAuthor = computed(() => {
   if (!test.value || !authStore.currentUser) return false
   return test.value.authorId === authStore.currentUser.id
 })
 
-// ==========================================
-// МЕТОДЫ
-// ==========================================
-
-/**
- * Форматирует дату в читабельный формат
- */
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
   return date.toLocaleDateString('ru-RU', {
@@ -247,12 +179,9 @@ function formatDate(dateString: string): string {
   })
 }
 
-/**
- * Подтверждение и удаление теста
- */
 async function confirmDelete(): Promise<void> {
   const confirmed = confirm(
-    '⚠️ Вы уверены, что хотите удалить этот тест?\n' +
+    ' Вы уверены, что хотите удалить этот тест?\n' +
     'Это действие нельзя отменить.'
   )
   
@@ -266,9 +195,6 @@ async function confirmDelete(): Promise<void> {
   }
 }
 
-/**
- * Загружает данные теста
- */
 async function loadTest(): Promise<void> {
   isLoading.value = true
   
@@ -283,19 +209,12 @@ async function loadTest(): Promise<void> {
   }
 }
 
-// ==========================================
-// ЖИЗНЕННЫЙ ЦИКЛ
-// ==========================================
-
 onMounted(() => {
   loadTest()
 })
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ СТРАНИЦЫ ПОДРОБНОСТЕЙ ТЕСТА
-   ========================================== */
 
 .test-details-page {
   padding: 2rem;
@@ -303,11 +222,6 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-/* ==========================================
-   СОСТОЯНИЯ
-   ========================================== */
-
-/* Загрузка */
 .loading {
   display: flex;
   flex-direction: column;
@@ -330,7 +244,6 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Не найден */
 .not-found {
   text-align: center;
   padding: 6rem 2rem;
@@ -348,10 +261,6 @@ onMounted(() => {
   margin-bottom: 1.5rem;
 }
 
-/* ==========================================
-   НАВИГАЦИЯ
-   ========================================== */
-
 .back-link {
   display: inline-block;
   color: var(--color-text-muted);
@@ -364,19 +273,11 @@ onMounted(() => {
   color: var(--color-primary);
 }
 
-/* ==========================================
-   ОСНОВНОЙ КОНТЕНТ
-   ========================================== */
-
 .test-content {
   display: grid;
   grid-template-columns: 1fr 340px;
   gap: 2rem;
 }
-
-/* ==========================================
-   ЛЕВАЯ ЧАСТЬ: ИНФОРМАЦИЯ
-   ========================================== */
 
 .test-info {
   background: var(--color-surface);
@@ -385,7 +286,6 @@ onMounted(() => {
   padding: 2rem;
 }
 
-/* Бейджи */
 .badges {
   display: flex;
   flex-wrap: wrap;
@@ -423,23 +323,17 @@ onMounted(() => {
   color: #f87171;
 }
 
-/* Заголовок */
 .test-info h1 {
   font-size: 1.8rem;
   margin-bottom: 1rem;
   color: var(--color-text);
 }
 
-/* Описание */
 .description {
   color: var(--color-text-muted);
   line-height: 1.7;
   margin-bottom: 1.5rem;
 }
-
-/* ==========================================
-   АВТОР
-   ========================================== */
 
 .author-info {
   display: flex;
@@ -474,10 +368,6 @@ onMounted(() => {
   color: var(--color-text-muted);
 }
 
-/* ==========================================
-   НАСТРОЙКИ ТЕСТА
-   ========================================== */
-
 .test-settings {
   border-top: 1px solid var(--color-border);
   padding-top: 1.5rem;
@@ -511,20 +401,12 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* ==========================================
-   ДЕЙСТВИЯ АВТОРА
-   ========================================== */
-
 .author-actions {
   display: flex;
   gap: 1rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-border);
 }
-
-/* ==========================================
-   ПРАВАЯ ЧАСТЬ: КАРТОЧКА ПРОХОЖДЕНИЯ
-   ========================================== */
 
 .take-test-card {
   background: var(--color-surface);
@@ -542,7 +424,6 @@ onMounted(() => {
   text-align: center;
 }
 
-/* Статистика */
 .quick-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -569,7 +450,6 @@ onMounted(() => {
   margin-top: 0.25rem;
 }
 
-/* Предупреждения */
 .exam-warnings {
   display: flex;
   flex-direction: column;
@@ -586,14 +466,12 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-/* Кнопка */
 .btn-large {
   width: 100%;
   padding: 1rem;
   font-size: 1.05rem;
 }
 
-/* Для неавторизованных */
 .auth-required {
   text-align: center;
 }
@@ -607,10 +485,6 @@ onMounted(() => {
 .auth-required .btn {
   width: 100%;
 }
-
-/* ==========================================
-   АДАПТИВНОСТЬ
-   ========================================== */
 
 @media (max-width: 768px) {
   .test-content {

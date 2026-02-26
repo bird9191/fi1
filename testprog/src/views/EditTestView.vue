@@ -1,63 +1,40 @@
-<!--
-  ==========================================
-  РЕДАКТИРОВАНИЕ ТЕСТА (EditTestView.vue)
-  ==========================================
-  
-  Форма редактирования существующего теста/экзамена.
-  Аналогична CreateTestView, но загружает данные
-  существующего теста.
--->
+
 
 <template>
   <div class="edit-test-page">
-    
-    <!-- ==========================================
-         СОСТОЯНИЕ ЗАГРУЗКИ
-         ========================================== -->
+
     <div v-if="isLoading" class="loading">
       <div class="spinner"></div>
       <p>Загрузка теста...</p>
     </div>
 
-    <!-- ==========================================
-         ТЕСТ НЕ НАЙДЕН
-         ========================================== -->
     <div v-else-if="!test" class="not-found">
-      <h2>😕 Тест не найден</h2>
+      <h2> Тест не найден</h2>
       <router-link to="/dashboard" class="btn btn-primary">
         ← Вернуться назад
       </router-link>
     </div>
 
-    <!-- ==========================================
-         ФОРМА РЕДАКТИРОВАНИЯ
-         ========================================== -->
     <template v-else>
-      
-      <!-- Заголовок -->
+
       <header class="page-header">
         <router-link to="/dashboard" class="back-link">
           ← Назад
         </router-link>
-        <h1>✏️ Редактировать {{ form.type === 'exam' ? 'экзамен' : 'тест' }}</h1>
+        <h1> Редактировать {{ form.type === 'exam' ? 'экзамен' : 'тест' }}</h1>
       </header>
 
       <form @submit.prevent="handleSubmit" class="edit-form">
-        
-        <!-- ==========================================
-             ОСНОВНАЯ ИНФОРМАЦИЯ
-             ========================================== -->
+
         <section class="form-section">
-          <h2>📝 Основная информация</h2>
-          
-          <!-- Тип (только для чтения) -->
+          <h2> Основная информация</h2>
+
           <div class="type-display">
             <span class="type-badge" :class="form.type">
-              {{ form.type === 'exam' ? '📋 Экзамен' : '✏️ Тест' }}
+              {{ form.type === 'exam' ? ' Экзамен' : ' Тест' }}
             </span>
           </div>
 
-          <!-- Название -->
           <div class="form-group">
             <label for="title">Название *</label>
             <input
@@ -69,7 +46,6 @@
             />
           </div>
 
-          <!-- Описание -->
           <div class="form-group">
             <label for="description">Описание</label>
             <textarea
@@ -80,24 +56,20 @@
             ></textarea>
           </div>
 
-          <!-- Публичность -->
           <div class="form-group checkbox-group">
             <label>
               <input type="checkbox" v-model="form.isPublic" />
-              <span>🌍 Публичный</span>
+              <span> Публичный</span>
             </label>
           </div>
         </section>
 
-        <!-- ==========================================
-             НАСТРОЙКИ (для экзаменов)
-             ========================================== -->
         <section v-if="form.type === 'exam'" class="form-section">
-          <h2>⚙️ Настройки экзамена</h2>
+          <h2> Настройки экзамена</h2>
           
           <div class="settings-grid">
             <div class="form-group">
-              <label for="timeLimit">⏱ Время (мин)</label>
+              <label for="timeLimit"> Время (мин)</label>
               <input
                 id="timeLimit"
                 v-model.number="form.timeLimit"
@@ -108,7 +80,7 @@
             </div>
 
             <div class="form-group">
-              <label for="passingScore">🎯 Проходной балл (%)</label>
+              <label for="passingScore"> Проходной балл (%)</label>
               <input
                 id="passingScore"
                 v-model.number="form.passingScore"
@@ -119,7 +91,7 @@
             </div>
 
             <div class="form-group">
-              <label for="maxAttempts">🔄 Макс. попыток</label>
+              <label for="maxAttempts"> Макс. попыток</label>
               <input
                 id="maxAttempts"
                 v-model.number="form.maxAttempts"
@@ -132,62 +104,57 @@
           <div class="settings-checkboxes">
             <label class="checkbox-item">
               <input type="checkbox" v-model="form.strictMode" />
-              <span>🔒 Строгий режим</span>
+              <span> Строгий режим</span>
             </label>
             
             <label class="checkbox-item">
               <input type="checkbox" v-model="form.shuffleQuestions" />
-              <span>🔀 Перемешивать вопросы</span>
+              <span> Перемешивать вопросы</span>
             </label>
             
             <label class="checkbox-item">
               <input type="checkbox" v-model="form.shuffleOptions" />
-              <span>🎲 Перемешивать ответы</span>
+              <span> Перемешивать ответы</span>
             </label>
             
             <label class="checkbox-item">
               <input type="checkbox" v-model="form.showHints" />
-              <span>💡 Показывать подсказки</span>
+              <span> Показывать подсказки</span>
             </label>
           </div>
         </section>
 
-        <!-- Настройки для тестов -->
         <section v-else class="form-section">
-          <h2>⚙️ Настройки теста</h2>
+          <h2> Настройки теста</h2>
           
           <div class="settings-checkboxes">
             <label class="checkbox-item">
               <input type="checkbox" v-model="form.allowTrainingMode" />
-              <span>📚 Режим тренировки</span>
+              <span> Режим тренировки</span>
             </label>
             
             <label class="checkbox-item">
               <input type="checkbox" v-model="form.showHints" />
-              <span>💡 Подсказки</span>
+              <span> Подсказки</span>
             </label>
             
             <label class="checkbox-item">
               <input type="checkbox" v-model="form.showExplanations" />
-              <span>📖 Объяснения</span>
+              <span> Объяснения</span>
             </label>
           </div>
         </section>
 
-        <!-- ==========================================
-             ВОПРОСЫ
-             ========================================== -->
         <section class="form-section">
           <div class="section-header">
-            <h2>❓ Вопросы ({{ form.questions.length }})</h2>
+            <h2> Вопросы ({{ form.questions.length }})</h2>
             <button type="button" @click="addQuestion" class="btn btn-outline btn-sm">
-              ➕ Добавить
+               Добавить
             </button>
           </div>
 
-          <!-- Список вопросов -->
           <div v-if="form.questions.length === 0" class="no-questions">
-            <p>📝 Нет вопросов</p>
+            <p> Нет вопросов</p>
           </div>
 
           <div v-else class="questions-list">
@@ -203,11 +170,10 @@
                   @click="removeQuestion(qIndex)" 
                   class="btn-icon danger"
                 >
-                  🗑️
+                  
                 </button>
               </div>
 
-              <!-- Текст вопроса -->
               <div class="form-group">
                 <label>Текст *</label>
                 <textarea
@@ -217,7 +183,6 @@
                 ></textarea>
               </div>
 
-              <!-- Тип -->
               <div class="form-group">
                 <label>Тип</label>
                 <select v-model="question.type">
@@ -227,7 +192,6 @@
                 </select>
               </div>
 
-              <!-- Варианты ответов -->
               <div 
                 v-if="question.type === 'single' || question.type === 'multiple'" 
                 class="options-editor"
@@ -256,33 +220,28 @@
                     class="btn-icon small"
                     :disabled="question.options.length <= 2"
                   >
-                    ✕
+                    
                   </button>
                 </div>
 
                 <button type="button" @click="addOption(qIndex)" class="btn btn-text">
-                  ➕ Добавить вариант
+                   Добавить вариант
                 </button>
               </div>
 
-              <!-- Текстовый ответ -->
               <div v-else class="form-group">
                 <label>Правильный ответ</label>
                 <input v-model="question.correctAnswer" type="text" />
               </div>
 
-              <!-- Подсказка -->
               <div class="form-group">
-                <label>💡 Подсказка</label>
+                <label> Подсказка</label>
                 <input v-model="question.hint" type="text" />
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ==========================================
-             ДЕЙСТВИЯ
-             ========================================== -->
         <div class="form-actions">
           <router-link to="/dashboard" class="btn btn-outline">
             Отмена
@@ -292,7 +251,7 @@
             class="btn btn-primary"
             :disabled="!canSubmit || isSubmitting"
           >
-            {{ isSubmitting ? '⏳ Сохранение...' : '✓ Сохранить' }}
+            {{ isSubmitting ? ' Сохранение...' : ' Сохранить' }}
           </button>
         </div>
         
@@ -303,28 +262,15 @@
 </template>
 
 <script setup lang="ts">
-/**
- * ==========================================
- * ЛОГИКА РЕДАКТИРОВАНИЯ ТЕСТА
- * ==========================================
- */
 
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTestsStore } from '@/stores/tests'
 import type { Test, TestType } from '@/types'
 
-// ==========================================
-// МАРШРУТИЗАЦИЯ И ХРАНИЛИЩА
-// ==========================================
-
 const route = useRoute()
 const router = useRouter()
 const testsStore = useTestsStore()
-
-// ==========================================
-// ИНТЕРФЕЙСЫ
-// ==========================================
 
 interface FormOption {
   text: string
@@ -339,20 +285,12 @@ interface FormQuestion {
   hint: string
 }
 
-// ==========================================
-// СОСТОЯНИЕ
-// ==========================================
-
-/** Флаг загрузки */
 const isLoading = ref(true)
 
-/** Флаг отправки */
 const isSubmitting = ref(false)
 
-/** Исходный тест */
 const test = ref<Test | null>(null)
 
-/** Данные формы */
 const form = reactive({
   type: 'test' as TestType,
   title: '',
@@ -370,11 +308,6 @@ const form = reactive({
   questions: [] as FormQuestion[]
 })
 
-// ==========================================
-// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
-// ==========================================
-
-/** Можно ли отправить форму */
 const canSubmit = computed(() => {
   if (!form.title.trim()) return false
   if (form.questions.length === 0) return false
@@ -395,10 +328,6 @@ const canSubmit = computed(() => {
   
   return true
 })
-
-// ==========================================
-// МЕТОДЫ: РАБОТА С ВОПРОСАМИ
-// ==========================================
 
 function addQuestion(): void {
   form.questions.push({
@@ -440,13 +369,6 @@ function toggleCorrect(questionIndex: number, optionIndex: number): void {
   }
 }
 
-// ==========================================
-// МЕТОДЫ: ЗАГРУЗКА И СОХРАНЕНИЕ
-// ==========================================
-
-/**
- * Загружает данные теста
- */
 async function loadTest(): Promise<void> {
   isLoading.value = true
   
@@ -455,7 +377,7 @@ async function loadTest(): Promise<void> {
     test.value = await testsStore.getTestById(testId)
     
     if (test.value) {
-      // Заполняем форму данными теста
+      
       form.type = test.value.type || 'test'
       form.title = test.value.title
       form.description = test.value.description || ''
@@ -469,8 +391,7 @@ async function loadTest(): Promise<void> {
       form.allowTrainingMode = test.value.allowTrainingMode ?? true
       form.showHints = test.value.showHints || false
       form.showExplanations = test.value.showExplanations || false
-      
-      // Преобразуем вопросы
+
       form.questions = test.value.questions.map(q => ({
         text: q.text,
         type: q.type as 'single' | 'multiple' | 'text',
@@ -490,9 +411,6 @@ async function loadTest(): Promise<void> {
   }
 }
 
-/**
- * Сохраняет изменения
- */
 async function handleSubmit(): Promise<void> {
   if (!canSubmit.value || isSubmitting.value || !test.value) return
   
@@ -538,19 +456,12 @@ async function handleSubmit(): Promise<void> {
   }
 }
 
-// ==========================================
-// ЖИЗНЕННЫЙ ЦИКЛ
-// ==========================================
-
 onMounted(() => {
   loadTest()
 })
 </script>
 
 <style scoped>
-/* ==========================================
-   СТИЛИ РЕДАКТИРОВАНИЯ ТЕСТА
-   ========================================== */
 
 .edit-test-page {
   padding: 2rem;
@@ -558,7 +469,6 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-/* Загрузка и ошибки */
 .loading,
 .not-found {
   display: flex;
@@ -583,7 +493,6 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Заголовок */
 .page-header {
   margin-bottom: 2rem;
 }
@@ -603,7 +512,6 @@ onMounted(() => {
   font-size: 1.8rem;
 }
 
-/* Секции */
 .form-section {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -634,7 +542,6 @@ onMounted(() => {
   border: none;
 }
 
-/* Отображение типа */
 .type-display {
   margin-bottom: 1.25rem;
 }
@@ -657,7 +564,6 @@ onMounted(() => {
   color: #a78bfa;
 }
 
-/* Поля формы */
 .form-group {
   margin-bottom: 1rem;
 }
@@ -694,7 +600,6 @@ onMounted(() => {
   font-family: inherit;
 }
 
-/* Чекбоксы */
 .checkbox-group label {
   display: flex;
   align-items: center;
@@ -707,7 +612,6 @@ onMounted(() => {
   height: 18px;
 }
 
-/* Настройки */
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -736,7 +640,6 @@ onMounted(() => {
   height: 18px;
 }
 
-/* Вопросы */
 .no-questions {
   text-align: center;
   padding: 2rem;
@@ -768,7 +671,6 @@ onMounted(() => {
   color: var(--color-primary);
 }
 
-/* Варианты ответов */
 .options-editor {
   margin-bottom: 1rem;
 }
@@ -808,7 +710,6 @@ onMounted(() => {
   border-color: var(--color-primary);
 }
 
-/* Кнопки */
 .btn-icon {
   width: 32px;
   height: 32px;
@@ -858,7 +759,6 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
-/* Действия */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -866,7 +766,6 @@ onMounted(() => {
   padding-top: 1rem;
 }
 
-/* Адаптивность */
 @media (max-width: 600px) {
   .settings-grid {
     grid-template-columns: 1fr;
